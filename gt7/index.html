@@ -17,7 +17,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@suke69">
 
-  <link rel="preload" as="image" href="img/hero.webp" imagesrcset="img/hero-960.webp 960w, img/hero.webp 1776w" imagesizes="100vw">
+  <link rel="preload" as="image" href="img/hero.webp" imagesrcset="img/hero-960.webp 960w, img/hero.webp 1920w" imagesizes="100vw">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&display=swap" rel="stylesheet">
@@ -82,7 +82,7 @@
       padding: 96px 0 56px;
     }
     .hero-bg { position: absolute; inset: 0; z-index: -2; }
-    .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 78% 50%; }
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 68% 50%; }
     .hero::before {
       content: ''; position: absolute; inset: 0; z-index: -1;
       background:
@@ -92,7 +92,7 @@
     @media (max-width: 760px) {
       .hero { padding-top: 58vw; }
       .hero-bg { bottom: auto; height: 78vw; }
-      .hero-bg img { object-position: 82% 50%; }
+      .hero-bg img { object-position: 72% 50%; }
       .hero::before {
         background: linear-gradient(0deg, var(--bg) 0%, var(--bg) calc(100% - 78vw + 8vw), rgba(7, 9, 13, .2) calc(100% - 40vw), rgba(7, 9, 13, .35) 100%);
       }
@@ -274,7 +274,7 @@
     /* 最後のダウンロード */
     .cta { position: relative; isolation: isolate; overflow: hidden; text-align: center; padding: 110px 0 100px; }
     .cta-bg { position: absolute; inset: 0; z-index: -2; }
-    .cta-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 60%; opacity: .6; }
+    .cta-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 80% 50%; opacity: .7; }
     .cta::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(70% 90% at 50% 50%, rgba(7, 9, 13, .55), var(--bg) 80%), linear-gradient(180deg, var(--bg), transparent 30%, transparent 70%, var(--bg)); }
     .cta img.icon { width: 76px; height: 76px; margin: 0 auto; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 14px 36px rgba(0, 0, 0, .5); }
     .cta h2 { font-size: clamp(28px, 4.6vw, 44px); font-weight: 900; margin: 18px 0 6px; }
@@ -308,7 +308,7 @@
 
   <header class="hero">
     <picture class="hero-bg">
-      <img src="img/hero.webp" srcset="img/hero-960.webp 960w, img/hero.webp 1776w" sizes="100vw" alt="" width="1776" height="896" fetchpriority="high">
+      <img src="img/hero.webp" srcset="img/hero-960.webp 960w, img/hero.webp 1920w" sizes="100vw" alt="" width="1920" height="1080" fetchpriority="high">
     </picture>
     <div class="wrap hero-inner">
       <div>
@@ -508,7 +508,7 @@
   </section>
 
   <div class="cta">
-    <div class="cta-bg"><img src="img/car-960.webp" alt="" width="960" height="540" loading="lazy" decoding="async"></div>
+    <div class="cta-bg"><img src="img/kv-960.webp" alt="" width="960" height="484" loading="lazy" decoding="async"></div>
     <div class="wrap">
       <img class="icon" src="../icons/gt7.webp" alt="" width="76" height="76">
       <h2>次の 1 周を、速くする。</h2>

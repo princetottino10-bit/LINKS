@@ -276,8 +276,10 @@
       font-size: clamp(26px, 4.4vw, 40px);
       letter-spacing: 1px;
       line-height: 1.15;
-      margin-bottom: 12px;
     }
+
+    .featured .card-head { gap: 16px; margin-bottom: 14px; }
+    .featured .app-icon { width: 64px; height: 64px; }
 
     .featured-desc {
       color: var(--text-2);
@@ -377,6 +379,7 @@
     }
 
     .section-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+    .section-link img { width: 22px; height: 22px; border-radius: 22%; }
 
     /* ===== Cards ===== */
     .grid {
@@ -478,6 +481,24 @@
       margin-bottom: 8px;
     }
 
+    /* アプリアイコンと名前を横に並べる */
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .card-head .card-ja { margin-bottom: 0; }
+
+    .app-icon {
+      flex: none;
+      width: 46px;
+      height: 46px;
+      border-radius: 22%;
+      box-shadow: 0 0 0 1px var(--line-strong), 0 6px 16px rgba(0, 0, 0, 0.35);
+    }
+
     .card-desc {
       font-size: 13px;
       color: var(--text-2);
@@ -564,6 +585,7 @@
       .grid.wide .card-body { padding: 26px 28px 6px; }
       .grid.wide .card-foot { padding: 12px 28px 24px; }
       .grid.wide .card-title { font-size: 22px; }
+      .grid.wide .app-icon { width: 56px; height: 56px; }
       .grid.wide .card-desc { font-size: 14px; }
     }
 
@@ -643,7 +665,7 @@
           <h2 class="section-title compile">COMPILE <span class="bang">&lt;!&gt;</span></h2>
           <p class="section-sub">ボードゲーム『コンパイル』のおともツール（ファンメイド・非公式）</p>
         </div>
-        <a class="section-link" href="https://princetottino10-bit.github.io/compile/" target="_blank" rel="noopener noreferrer">ポータルをひらく <span aria-hidden="true">↗</span></a>
+        <a class="section-link" href="https://princetottino10-bit.github.io/compile/" target="_blank" rel="noopener noreferrer"><img src="icons/compile.webp" alt="" width="22" height="22">ポータルをひらく <span aria-hidden="true">↗</span></a>
       </div>
       <div class="grid lead-2" data-group="compile"></div>
     </section>
@@ -696,6 +718,7 @@
      *   badge    : サムネ左上に出す任意の文言（status より弱い）
      *   linkLabel: 「ひらく」の代わりに出す文言（リンク先がアプリ本体でないとき用）
      *   repo     : ソースコードの GitHub（なければ省略）
+     *   icon     : アプリアイコン icons/<icon>.webp（一覧用 160px）。ホーム画面用の 512px は icons/<icon>.png
      */
     const APPS = [
       {
@@ -708,6 +731,7 @@
         url: 'https://princetottino10-bit.github.io/compile/three-play.html',
         tutorial: 'https://princetottino10-bit.github.io/compile/three-play.html?tutorial=1',
         img: 'img/arena-lg.webp',
+        icon: 'arena',
         repo: 'https://github.com/princetottino10-bit/compile',
       },
       {
@@ -718,6 +742,7 @@
         tags: ['カード一覧', '逆引き検索', 'デッキ分析'],
         url: 'https://princetottino10-bit.github.io/compile/cardlist.html',
         img: 'img/cardlist.webp',
+        icon: 'cardlist',
         repo: 'https://github.com/princetottino10-bit/compile',
       },
       {
@@ -728,6 +753,7 @@
         tags: ['勝率', '相性表', 'シーズン別'],
         url: 'https://compile-battle-stats.vercel.app/',
         img: 'img/stats.webp',
+        icon: 'stats',
       },
       {
         group: 'compile',
@@ -737,6 +763,7 @@
         tags: ['対面プレイ', '2 人用'],
         url: 'https://princetottino10-bit.github.io/compile/control-tracker.html',
         img: 'img/control.webp',
+        icon: 'control',
         repo: 'https://github.com/princetottino10-bit/compile',
       },
       {
@@ -747,6 +774,7 @@
         tags: ['ランダマイザ', 'レシオ対応'],
         url: 'https://princetottino10-bit.github.io/compile-picker/compile_protocol_picker.html',
         img: 'img/picker.webp',
+        icon: 'picker',
         repo: 'https://github.com/princetottino10-bit/compile-picker',
       },
       {
@@ -757,6 +785,7 @@
         tags: ['勝率', 'シンプル'],
         url: 'https://princetottino10-bit.github.io/compile-wr/',
         img: 'img/winrate.webp',
+        icon: 'winrate',
         repo: 'https://github.com/princetottino10-bit/compile-wr',
       },
       {
@@ -768,6 +797,7 @@
         tags: ['オリジナル', 'オンライン対戦', '対 AI', 'テスト中'],
         url: 'https://onmyo-fujin-eee5ac.fly.dev/',
         img: 'img/onmyo.webp',
+        icon: 'onmyo',
       },
       {
         group: 'tools',
@@ -779,6 +809,7 @@
         url: 'https://claude.ai/artifact/KghdSA9wg9h13YAg5qiDgA',
         linkLabel: '手引き',
         img: 'img/gt7.webp',
+        icon: 'gt7',
         accent: '#2ad4e8',
       },
       {
@@ -789,6 +820,7 @@
         tags: ['赤字', '事件表', '人物', 'ネタバレ防止'],
         url: 'https://claude.ai/artifact/6fnJbE845eGaowWkwFJEpF',
         img: 'img/umineko.webp',
+        icon: 'umineko',
         accent: '#c9a227',
       },
       {
@@ -801,6 +833,7 @@
         url: 'https://claude.ai/artifact/2cH9jNudtibRbqD5ujxYLC',
         linkLabel: 'ブランドシート',
         img: 'img/fukuro.webp',
+        icon: 'fukuro',
         accent: '#5EEAD4',
       },
     ];
@@ -811,6 +844,9 @@
     const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const ext = 'target="_blank" rel="noopener noreferrer"';
     const tagList = (tags) => `<ul class="tags">${tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
+    const appIcon = (app) => app.icon
+      ? `<img class="app-icon" src="icons/${esc(app.icon)}.webp" alt="" width="160" height="160" loading="lazy" decoding="async">`
+      : '';
 
     function card(app) {
       const badge = {
@@ -834,8 +870,13 @@
           </div>
           <div class="card-inner">
             <div class="card-body">
-              <h3 class="card-title">${title}</h3>
-              <p class="card-ja">${esc(app.ja)}</p>
+              <div class="card-head">
+                ${appIcon(app)}
+                <div>
+                  <h3 class="card-title">${title}</h3>
+                  <p class="card-ja">${esc(app.ja)}</p>
+                </div>
+              </div>
               <p class="card-desc">${esc(app.desc)}</p>
               ${tagList(app.tags)}
             </div>
@@ -858,8 +899,13 @@
           </div>
           <div class="featured-body">
             <span class="pickup">PICK UP</span>
-            <p class="featured-series">COMPILE <em>&lt;!&gt;</em></p>
-            <h2>${esc(app.title)}</h2>
+            <div class="card-head">
+              ${appIcon(app)}
+              <div>
+                <p class="featured-series">COMPILE <em>&lt;!&gt;</em></p>
+                <h2>${esc(app.title)}</h2>
+              </div>
+            </div>
             <p class="featured-desc">${esc(app.desc)}</p>
             ${tagList(app.tags)}
             <div class="btns">

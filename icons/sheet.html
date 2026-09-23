@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>アプリアイコン</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Noto+Sans+JP:wght@700;900&family=Shippori+Mincho+B1:wght@800&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #1b1d24; font-family: 'Noto Sans JP', sans-serif; color: #e9eef8; }
+  .sheet { display: grid; grid-template-columns: repeat(5, 200px); gap: 34px 28px; padding: 40px 44px 44px; width: max-content; }
+  figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  figure svg { width: 180px; height: 180px; filter: drop-shadow(0 10px 22px rgba(0,0,0,.45)); }
+  figcaption { font-size: 13px; font-weight: 700; text-align: center; line-height: 1.4; }
+  figcaption small { display: block; font-size: 10.5px; color: rgba(233,238,248,.55); font-weight: 700; letter-spacing: .08em; }
+  h1 { margin: 0; padding: 34px 44px 0; font: 900 20px/1 'Noto Sans JP'; letter-spacing: .1em; }
+  h1 small { margin-left: 12px; font-size: 12px; color: rgba(233,238,248,.55); letter-spacing: .06em; }
+  .row-label { grid-column: 1 / -1; margin: 6px 0 -18px; font-size: 11px; font-weight: 900; letter-spacing: .24em; color: rgba(233,238,248,.45); }
+</style>
+</head>
+<body>
+<h1>アプリアイコン <small>元の SVG。ホーム画面用の 512px は icons/＜id＞.png、一覧用の 160px は icons/＜id＞.webp</small></h1>
+<div class="sheet">
+
+  <div class="row-label">COMPILE</div>
+
+  <!-- COMPILE ポータル: <!> -->
+  <figure data-id="compile">
+    <svg viewBox="0 0 1024 1024">
+      <defs>
+        <radialGradient id="g-portal" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="#2a0f2e"/><stop offset="1" stop-color="#05050b"/></radialGradient>
+        <filter id="neon-p" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="18" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      </defs>
+      <rect width="1024" height="1024" rx="230" fill="url(#g-portal)"/>
+      <text x="512" y="610" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="330" fill="#ff3b9d" filter="url(#neon-p)">&lt;!&gt;</text>
+      <text x="512" y="790" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="74" letter-spacing="10" fill="#e9eef8" opacity=".85">COMPILE</text>
+    </svg>
+    <figcaption>COMPILE ポータル<small>index.html</small></figcaption>
+  </figure>
+
+  <!-- 3D ARENA: // と床の格子 -->
+  <figure data-id="arena">
+    <svg viewBox="0 0 1024 1024">
+      <defs>
+        <linearGradient id="g-arena" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a0a24"/><stop offset=".62" stop-color="#05050b"/><stop offset="1" stop-color="#03141a"/></linearGradient>
+        <clipPath id="c-arena"><rect width="1024" height="1024" rx="230"/></clipPath>
+      </defs>
+      <rect width="1024" height="1024" rx="230" fill="url(#g-arena)"/>
+      <g clip-path="url(#c-arena)" stroke="#63f3ff" stroke-width="6" opacity=".55">
+        <path d="M0 740H1024M0 810H1024M0 900H1024M0 1010H1024"/>
+        <path d="M512 680L512 1024M512 680L330 1024M512 680L150 1024M512 680L-40 1024M512 680L694 1024M512 680L874 1024M512 680L1064 1024"/>
+      </g>
+      <g filter="url(#neon-p)" fill="#ff3b9d">
+        <path d="M388 210h118L396 640H278z"/>
+        <path d="M600 210h118L608 640H490z"/>
+      </g>
+    </svg>
+    <figcaption>3D ARENA<small>three-play.html</small></figcaption>
+  </figure>
+
+  <!-- CARD LIST: 扇に開いた3枚 -->
+  <figure data-id="cardlist">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#07070d"/>
+      <g stroke="#ff3b9d" stroke-width="30" stroke-linejoin="round" fill="#0e0d18">
+        <rect x="362" y="262" width="300" height="430" rx="34" transform="rotate(-18 512 760)"/>
+        <rect x="362" y="262" width="300" height="430" rx="34" transform="rotate(18 512 760)"/>
+        <rect x="362" y="232" width="300" height="430" rx="34"/>
+      </g>
+      <text x="512" y="486" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="112" fill="#ff3b9d">&lt;!&gt;</text>
+      <path d="M422 560h180M422 604h130" stroke="#e9eef8" stroke-width="22" stroke-linecap="round" opacity=".5"/>
+    </svg>
+    <figcaption>CARD LIST<small>カードリスト</small></figcaption>
+  </figure>
+
+  <!-- PICKER: サイコロ -->
+  <figure data-id="picker">
+    <svg viewBox="0 0 1024 1024">
+      <defs><radialGradient id="g-pick" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#0b2a26"/><stop offset="1" stop-color="#04070a"/></radialGradient></defs>
+      <rect width="1024" height="1024" rx="230" fill="url(#g-pick)"/>
+      <g transform="rotate(-12 512 512)">
+        <rect x="262" y="262" width="500" height="500" rx="96" fill="#0b1413" stroke="#6dffc2" stroke-width="34"/>
+        <g fill="#63f3ff">
+          <circle cx="392" cy="392" r="46"/><circle cx="632" cy="392" r="46"/>
+          <circle cx="512" cy="512" r="46"/>
+          <circle cx="392" cy="632" r="46"/><circle cx="632" cy="632" r="46"/>
+        </g>
+      </g>
+    </svg>
+    <figcaption>PROTOCOL PICKER<small>picker.html</small></figcaption>
+  </figure>
+
+  <!-- CONTROL TRACKER: コントロールマーカー (既存の意匠) -->
+  <figure data-id="control">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#0a0a12"/>
+      <path d="M452.6 196.8 L148.1 724.4 L207.4 827.2 L816.6 827.2 L875.9 724.4 L571.4 196.8 Z M439.4 375.3 L584.6 375.3 L585.0 458.8 L655.8 581.6 L728.0 623.7 L655.4 749.4 L582.9 708.0 L441.1 708.0 L368.6 749.4 L296.0 623.7 L368.2 581.6 L439.0 458.8 Z" fill="#ff3b9d" fill-rule="evenodd"/>
+      <circle cx="512.0" cy="582.8" r="73.6" fill="#ff3b9d"/>
+    </svg>
+    <figcaption>CONTROL TRACKER<small>control-tracker.html</small></figcaption>
+  </figure>
+
+  <!-- BATTLE STATS: 伸びる棒グラフ -->
+  <figure data-id="stats">
+    <svg viewBox="0 0 1024 1024">
+      <defs><linearGradient id="g-bar" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7c3aed"/><stop offset="1" stop-color="#ff3b9d"/></linearGradient></defs>
+      <rect width="1024" height="1024" rx="230" fill="#0b0716"/>
+      <g fill="url(#g-bar)">
+        <rect x="236" y="560" width="130" height="236" rx="26"/>
+        <rect x="447" y="430" width="130" height="366" rx="26"/>
+        <rect x="658" y="290" width="130" height="506" rx="26"/>
+      </g>
+      <path d="M220 470L420 330L560 380L800 190" fill="none" stroke="#63f3ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="800" cy="190" r="40" fill="#63f3ff"/>
+    </svg>
+    <figcaption>BATTLE STATS<small>戦績集計</small></figcaption>
+  </figure>
+
+  <!-- 勝率集計: 円グラフ -->
+  <figure data-id="winrate">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#0d0b06"/>
+      <circle cx="512" cy="512" r="250" fill="none" stroke="#3a3322" stroke-width="96"/>
+      <circle cx="512" cy="512" r="250" fill="none" stroke="#efd06c" stroke-width="96" stroke-dasharray="1021 1571" transform="rotate(-90 512 512)" stroke-linecap="round"/>
+      <text x="512" y="578" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="170" fill="#fff">%</text>
+    </svg>
+    <figcaption>COMPILE 勝率集計<small>compile-wr</small></figcaption>
+  </figure>
+
+  <!-- RULES: 開いた本 -->
+  <figure data-id="rules">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#040a0f"/>
+      <g fill="#0b1a22" stroke="#63f3ff" stroke-width="30" stroke-linejoin="round">
+        <path d="M512 330C432 272 330 256 212 270v456c118-14 220 2 300 60z"/>
+        <path d="M512 330c80-58 182-74 300-60v456c-118-14-220 2-300 60z"/>
+      </g>
+      <path d="M512 330v456" stroke="#63f3ff" stroke-width="30"/>
+      <path d="M292 380c60-6 112 2 160 24M292 460c60-6 112 2 160 24M292 540c60-6 112 2 160 24" stroke="#e9eef8" stroke-width="20" stroke-linecap="round" fill="none" opacity=".55"/>
+      <text x="662" y="560" text-anchor="middle" font-family="Orbitron" font-weight="900" font-size="150" fill="#ff3b9d">//</text>
+    </svg>
+    <figcaption>ルールの早見表<small>rules.html</small></figcaption>
+  </figure>
+
+  <div class="row-label">ORIGINAL</div>
+
+  <!-- 陰陽符陣: 札と太極 -->
+  <figure data-id="onmyo">
+    <svg viewBox="0 0 1024 1024">
+      <defs><radialGradient id="g-onmyo" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#2a2418"/><stop offset="1" stop-color="#0c0c10"/></radialGradient></defs>
+      <rect width="1024" height="1024" rx="230" fill="url(#g-onmyo)"/>
+      <rect x="44" y="44" width="936" height="936" rx="196" fill="none" stroke="#d7b565" stroke-width="10" opacity=".55"/>
+      <rect x="322" y="170" width="380" height="684" rx="22" fill="#f3eee1" stroke="#26262b" stroke-width="14"/>
+      <g transform="translate(512 432)">
+        <circle r="128" fill="#1b2340"/>
+        <path d="M0-128A128 128 0 0 1 0 128A64 64 0 0 1 0 0A64 64 0 0 0 0-128Z" fill="#f3eee1"/>
+        <circle cy="64" r="22" fill="#1b2340"/><circle cy="-64" r="22" fill="#f3eee1"/>
+        <circle r="128" fill="none" stroke="#26262b" stroke-width="10"/>
+      </g>
+      <text x="512" y="700" text-anchor="middle" font-family="'Shippori Mincho B1'" font-weight="800" font-size="118" fill="#26262b">符陣</text>
+      <rect x="566" y="742" width="88" height="88" rx="10" fill="#c0332b"/>
+    </svg>
+    <figcaption>陰陽符陣（仮）<small>onmyo-fujin (Fly.io)</small></figcaption>
+  </figure>
+
+  <div class="row-label">HOBBY &amp; LIFE</div>
+
+  <!-- GT7 テレメトリ: 速度計 -->
+  <figure data-id="gt7">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#0d1117"/>
+      <path d="M232 640a280 280 0 0 1 560 0" fill="none" stroke="#1d2a38" stroke-width="64" stroke-linecap="round"/>
+      <path d="M232 640a280 280 0 0 1 470-205" fill="none" stroke="#2ad4e8" stroke-width="64" stroke-linecap="round"/>
+      <path d="M512 640L700 420" stroke="#fff" stroke-width="34" stroke-linecap="round"/>
+      <circle cx="512" cy="640" r="52" fill="#fff"/>
+      <path d="M200 812c90-40 160 40 250 0s160-60 250-10 110 20 130 10" fill="none" stroke="#4ade80" stroke-width="26" stroke-linecap="round"/>
+    </svg>
+    <figcaption>GT7 テレメトリ<small>Windows</small></figcaption>
+  </figure>
+
+  <!-- うみねこ考察卓: 黄金蝶 (アプリの紋章そのまま) -->
+  <figure data-id="umineko">
+    <svg viewBox="0 0 1024 1024">
+      <defs><radialGradient id="g-umi" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#3a2a12"/><stop offset=".6" stop-color="#151019"/><stop offset="1" stop-color="#0e0b11"/></radialGradient></defs>
+      <rect width="1024" height="1024" rx="230" fill="url(#g-umi)"/>
+      <g transform="translate(152 152) scale(30)" color="#e8ca6e" fill="none" stroke="#e8ca6e" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11.4 8.6C9.6 4.9 5.6 3.2 3.9 5.1c-1.6 1.8-.4 5.3 3 6.9l4.5 1.2z" fill="currentColor" stroke="none"/>
+        <path d="M12.6 8.6c1.8-3.7 5.8-5.4 7.5-3.5 1.6 1.8.4 5.3-3 6.9l-4.5 1.2z" fill="currentColor" stroke="none"/>
+        <path d="M11.5 13.4c-1.6 3.6-4.7 5.2-6.1 3.7-1.3-1.4-.4-3.9 2.3-5.1"/>
+        <path d="M12.5 13.4c1.6 3.6 4.7 5.2 6.1 3.7 1.3-1.4.4-3.9-2.3-5.1"/>
+        <path d="M12 7.2v10.4"/><path d="M10.6 4.6L12 6.6l1.4-2"/>
+      </g>
+    </svg>
+    <figcaption>うみねこ考察卓<small>紋章: 黄金蝶</small></figcaption>
+  </figure>
+
+  <!-- Fukuro: ブランドシートのマーク A -->
+  <figure data-id="fukuro">
+    <svg viewBox="0 0 1024 1024">
+      <rect width="1024" height="1024" rx="230" fill="#0B0E14"/>
+      <g transform="translate(152 152) scale(3)">
+        <circle cx="132" cy="108" r="88" fill="#5EEAD4"/>
+        <polygon points="52,84 78,58 92,92" fill="#0B0E14"/><polygon points="140,84 114,58 100,92" fill="#0B0E14"/>
+        <ellipse cx="96" cy="150" rx="62" ry="74" fill="#0B0E14"/>
+        <circle cx="70" cy="128" r="15" fill="#5EEAD4"/><circle cx="122" cy="128" r="15" fill="#5EEAD4"/>
+        <circle cx="70" cy="128" r="5.5" fill="#0B0E14"/><circle cx="122" cy="128" r="5.5" fill="#0B0E14"/>
+        <polygon points="96,146 88,158 104,158" fill="#5EEAD4"/>
+      </g>
+    </svg>
+    <figcaption>Fukuro<small>ブランドシートのマーク A</small></figcaption>
+  </figure>
+
+</div>
+</body>
+</html>

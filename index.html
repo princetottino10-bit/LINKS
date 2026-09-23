@@ -539,6 +539,10 @@
 
     .card-inner { display: contents; }
 
+    @media (min-width: 1000px) {
+      .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    }
+
     /* PC では上段 2 枚を大きく、残りを 3 列に */
     @media (min-width: 1000px) {
       .grid.lead-2 { grid-template-columns: repeat(6, 1fr); }
@@ -618,7 +622,7 @@
       <p class="kicker">WORKS</p>
       <h1>つくったアプリ、<br><span class="hl">ぜんぶ</span>ここ。</h1>
       <p class="hero-lead">
-        ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲーム、趣味の考察ツールまで。インストール不要、ブラウザでそのまま使えます。
+        ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲーム、GT7 の走行分析や趣味の考察ツールまで。インストール不要、ブラウザでそのまま使えます。
       </p>
       <ul class="hero-meta">
         <li><b id="app-count">-</b>APPS</li>
@@ -663,7 +667,7 @@
           <p class="section-sub">趣味や自分の生活のためにつくったもの</p>
         </div>
       </div>
-      <div class="grid" data-group="tools"></div>
+      <div class="grid cols-3" data-group="tools"></div>
     </section>
 
     <footer class="footer">
@@ -689,6 +693,8 @@
      *   featured : true にすると一番上の PICK UP に大きく表示
      *   status   : 'dev' で「開発中」、'private' で「自分用」バッジ（url なしでもOK）
      *   accent   : カードの差し色（省略するとグループの色）
+     *   badge    : サムネ左上に出す任意の文言（status より弱い）
+     *   linkLabel: 「ひらく」の代わりに出す文言（リンク先がアプリ本体でないとき用）
      *   repo     : ソースコードの GitHub（なければ省略）
      */
     const APPS = [
@@ -766,6 +772,18 @@
       },
       {
         group: 'tools',
+        badge: 'Windows',
+        title: 'GT7 テレメトリ',
+        ja: 'グランツーリスモ7 走行分析',
+        desc: 'PS5 の GT7 の走りを自動で記録して、どのコーナーで何秒失っていて次に何をすればいいかまでレポートに。ライブのデルタ表示や走行記録の一覧も。',
+        tags: ['GT7', 'ラップ分析', 'ライブ表示', '走行記録'],
+        url: 'https://claude.ai/artifact/KghdSA9wg9h13YAg5qiDgA',
+        linkLabel: '手引き',
+        img: 'img/gt7.webp',
+        accent: '#2ad4e8',
+      },
+      {
+        group: 'tools',
         title: 'うみねこ考察卓',
         ja: 'うみねこのなく頃に 考察ツール',
         desc: '『うみねこのなく頃に』の赤字・事件・人物をまとめた考察用の資料集。既読 EP に合わせてネタバレを伏せられます。',
@@ -781,6 +799,8 @@
         ja: '寝ている間の見張り番',
         desc: '寝ている間の相場を見張る、自分用のトレードボット ダッシュボード。今夜の売買判定と発注手順をひと目で。',
         tags: ['米国株', 'トレード', '自分用'],
+        url: 'https://claude.ai/artifact/2cH9jNudtibRbqD5ujxYLC',
+        linkLabel: 'ブランドシート',
         img: 'img/fukuro.webp',
         accent: '#5EEAD4',
       },
@@ -797,12 +817,12 @@
       const badge = {
         dev: '<span class="badge dev">開発中</span>',
         private: '<span class="badge private">自分用</span>',
-      }[app.status] || '';
+      }[app.status] || (app.badge ? `<span class="badge">${esc(app.badge)}</span>` : '');
       const title = app.url
         ? `<a href="${esc(app.url)}" ${ext}>${esc(app.title)}</a>`
         : esc(app.title);
       const open = app.url
-        ? '<span class="open" aria-hidden="true">ひらく <span class="arr">↗</span></span>'
+        ? `<span class="open" aria-hidden="true">${esc(app.linkLabel || 'ひらく')} <span class="arr">↗</span></span>`
         : '<span class="private-note">非公開</span>';
       const src = app.repo
         ? `<a class="src" href="${esc(app.repo)}" ${ext} aria-label="${esc(app.title)} のソースコード（GitHub）">${GITHUB_ICON}<span>GitHub</span></a>`

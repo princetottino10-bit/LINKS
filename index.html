@@ -442,6 +442,9 @@
     }
 
     .badge.dev { color: var(--gold); border-color: rgba(245, 197, 24, 0.5); }
+    .badge.private { color: var(--text-2); }
+
+    .private-note { color: var(--text-3); }
 
     .card-body {
       flex: 1;
@@ -615,7 +618,7 @@
       <p class="kicker">WORKS</p>
       <h1>つくったアプリ、<br><span class="hl">ぜんぶ</span>ここ。</h1>
       <p class="hero-lead">
-        ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲームまで。インストール不要、ぜんぶブラウザでそのまま遊べます。
+        ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲーム、趣味の考察ツールまで。インストール不要、ブラウザでそのまま使えます。
       </p>
       <ul class="hero-meta">
         <li><b id="app-count">-</b>APPS</li>
@@ -652,6 +655,17 @@
       <div class="grid wide" data-group="original"></div>
     </section>
 
+    <section class="section" id="tools">
+      <div class="section-head">
+        <div>
+          <p class="section-label">HOBBY &amp; LIFE</p>
+          <h2 class="section-title">そのほかのツール</h2>
+          <p class="section-sub">趣味や自分の生活のためにつくったもの</p>
+        </div>
+      </div>
+      <div class="grid" data-group="tools"></div>
+    </section>
+
     <footer class="footer">
       <div>
         <p class="footer-name">りゅー / うゆり</p>
@@ -671,9 +685,10 @@
     /*
      * アプリ一覧
      * 新しいアプリを追加するときは、この配列に 1 つ足すだけで OK。
-     *   group    : 'compile'（COMPILE ツール） / 'original'（オリジナルゲーム）
+     *   group    : 'compile'（COMPILE ツール） / 'original'（オリジナルゲーム） / 'tools'（そのほか）
      *   featured : true にすると一番上の PICK UP に大きく表示
-     *   status   : 'dev' にすると「開発中」バッジがつく
+     *   status   : 'dev' で「開発中」、'private' で「自分用」バッジ（url なしでもOK）
+     *   accent   : カードの差し色（省略するとグループの色）
      *   repo     : ソースコードの GitHub（なければ省略）
      */
     const APPS = [
@@ -749,9 +764,29 @@
         img: 'img/inou.webp',
         repo: 'https://github.com/princetottino10-bit/eoj-reboot',
       },
+      {
+        group: 'tools',
+        title: 'うみねこ考察卓',
+        ja: 'うみねこのなく頃に 考察ツール',
+        desc: '『うみねこのなく頃に』の赤字・事件・人物をまとめた考察用の資料集。既読 EP に合わせてネタバレを伏せられます。',
+        tags: ['赤字', '事件表', '人物', 'ネタバレ防止'],
+        url: 'https://claude.ai/artifact/6fnJbE845eGaowWkwFJEpF',
+        img: 'img/umineko.webp',
+        accent: '#c9a227',
+      },
+      {
+        group: 'tools',
+        status: 'private',
+        title: 'Fukuro',
+        ja: '寝ている間の見張り番',
+        desc: '寝ている間の相場を見張る、自分用のトレードボット ダッシュボード。今夜の売買判定と発注手順をひと目で。',
+        tags: ['米国株', 'トレード', '自分用'],
+        img: 'img/fukuro.webp',
+        accent: '#5EEAD4',
+      },
     ];
 
-    const ACCENT = { compile: '#e91e8c', original: '#f5c518' };
+    const ACCENT = { compile: '#e91e8c', original: '#f5c518', tools: '#63f3ff' };
     const GITHUB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>';
 
     const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -759,25 +794,34 @@
     const tagList = (tags) => `<ul class="tags">${tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
 
     function card(app) {
-      const badge = app.status === 'dev' ? '<span class="badge dev">開発中</span>' : '';
+      const badge = {
+        dev: '<span class="badge dev">開発中</span>',
+        private: '<span class="badge private">自分用</span>',
+      }[app.status] || '';
+      const title = app.url
+        ? `<a href="${esc(app.url)}" ${ext}>${esc(app.title)}</a>`
+        : esc(app.title);
+      const open = app.url
+        ? '<span class="open" aria-hidden="true">ひらく <span class="arr">↗</span></span>'
+        : '<span class="private-note">非公開</span>';
       const src = app.repo
         ? `<a class="src" href="${esc(app.repo)}" ${ext} aria-label="${esc(app.title)} のソースコード（GitHub）">${GITHUB_ICON}<span>GitHub</span></a>`
         : '';
       return `
-        <article class="card" style="--accent:${ACCENT[app.group] || 'var(--gold)'}">
+        <article class="card" style="--accent:${esc(app.accent || ACCENT[app.group] || 'var(--gold)')}">
           <div class="thumb">
             <img src="${esc(app.img)}" alt="${esc(app.title)} の画面" width="800" height="500" loading="lazy" decoding="async">
             ${badge}
           </div>
           <div class="card-inner">
             <div class="card-body">
-              <h3 class="card-title"><a href="${esc(app.url)}" ${ext}>${esc(app.title)}</a></h3>
+              <h3 class="card-title">${title}</h3>
               <p class="card-ja">${esc(app.ja)}</p>
               <p class="card-desc">${esc(app.desc)}</p>
               ${tagList(app.tags)}
             </div>
             <div class="card-foot">
-              <span class="open" aria-hidden="true">ひらく <span class="arr">↗</span></span>
+              ${open}
               ${src}
             </div>
           </div>

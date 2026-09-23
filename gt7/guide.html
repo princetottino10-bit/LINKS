@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GT7テレメトリの使い方ガイド</title>
+<meta name="description" content="GT7テレメトリの準備、走るたびの流れ、レポートの読み方、うまくいかないときの確認のしかた。">
+<link rel="icon" href="../icons/gt7.png">
+<link rel="apple-touch-icon" href="../icons/gt7.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Barlow+Condensed:wght@600;700&display=swap">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #151c26;
+    --panel-2: #1b2433;
+    --line: #26303d;
+    --text: #e7edf4;
+    --dim: #8fa0b3;
+    --accent: #2ad4e8;
+    --accent-soft: rgba(42, 212, 232, 0.12);
+    --good: #4ade80;
+    --warn: #f0b429;
+    --warn-soft: rgba(240, 180, 41, 0.12);
+    --console-bg: #0a0e14;
+    --console-text: #c9d6e3;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f2f5f8;
+      --panel: #ffffff;
+      --panel-2: #eef2f6;
+      --line: #d9e1ea;
+      --text: #17202b;
+      --dim: #5c6b7d;
+      --accent: #0a8ea6;
+      --accent-soft: rgba(10, 142, 166, 0.10);
+      --good: #15803d;
+      --warn: #b45309;
+      --warn-soft: rgba(180, 83, 9, 0.10);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f2f5f8;
+    --panel: #ffffff;
+    --panel-2: #eef2f6;
+    --line: #d9e1ea;
+    --text: #17202b;
+    --dim: #5c6b7d;
+    --accent: #0a8ea6;
+    --accent-soft: rgba(10, 142, 166, 0.10);
+    --good: #15803d;
+    --warn: #b45309;
+    --warn-soft: rgba(180, 83, 9, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif;
+    font-size: 16px;
+    line-height: 1.85;
+  }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 1.25rem 1rem 6rem; }
+
+  .back {
+    display: inline-flex; align-items: center; gap: 0.5rem; margin-bottom: 2rem;
+    color: var(--dim); text-decoration: none; font-size: 0.9rem;
+  }
+  .back img { width: 24px; height: 24px; border-radius: 22%; }
+  .back:hover, .back:focus-visible { color: var(--accent); outline: none; }
+
+  .eyebrow {
+    font-family: "Barlow Condensed", "Zen Kaku Gothic New", sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+  h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.35;
+    margin: 0.4rem 0 0.6rem;
+    text-wrap: balance;
+  }
+  .lead { color: var(--dim); margin: 0 0 1.6rem; }
+
+  .flow {
+    display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+    font-weight: 500; margin-bottom: 2.5rem;
+  }
+  .flow span {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 0.3rem 0.95rem; font-size: 0.95rem;
+  }
+  .flow .arrow { background: none; border: none; color: var(--dim); padding: 0; }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 3rem; }
+  nav.toc a {
+    color: var(--dim); text-decoration: none; font-size: 0.9rem;
+    border: 1px solid var(--line); border-radius: 999px; padding: 0.25rem 0.85rem;
+  }
+  nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+
+  section { margin-bottom: 3.75rem; }
+  h2 {
+    font-size: 1.45rem; font-weight: 700; line-height: 1.4;
+    margin: 0 0 0.35rem; text-wrap: balance;
+    padding-top: 0.5rem; border-top: 2px solid var(--line);
+  }
+  h2::before { content: ""; display: block; width: 3rem; height: 2px; background: var(--accent); margin: -0.5rem 0 1.1rem; position: relative; top: -2px; }
+  .sub { color: var(--dim); margin: 0 0 1.4rem; }
+  h3 { font-size: 1.05rem; font-weight: 700; margin: 1.8rem 0 0.5rem; }
+  p { margin: 0.7rem 0; }
+  strong { font-weight: 700; }
+  em { font-style: normal; color: var(--accent); font-weight: 500; }
+
+  .steps { display: grid; gap: 1.1rem; margin: 1.4rem 0; }
+  .step {
+    display: grid; grid-template-columns: 3.2rem 1fr; gap: 1rem;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 1rem 1.2rem;
+  }
+  .step .num {
+    font-family: "Barlow Condensed", sans-serif; font-weight: 700;
+    font-size: 2rem; line-height: 1.1; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .step h4 { margin: 0.1rem 0 0.25rem; font-size: 1rem; font-weight: 700; }
+  .step p { margin: 0; color: var(--dim); font-size: 0.95rem; line-height: 1.7; }
+  .step p b { color: var(--text); font-weight: 700; }
+  .step a { color: var(--accent); }
+
+  .console {
+    background: var(--console-bg); color: var(--console-text);
+    border: 1px solid #1d2735; border-radius: 8px;
+    padding: 0.9rem 1.1rem; margin: 1rem 0;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.83rem; line-height: 1.8;
+    overflow-x: auto; white-space: pre;
+  }
+  .console .c { color: #2ad4e8; }
+  .console .g { color: #4ade80; }
+  .console .y { color: #f0b429; }
+  .console-label {
+    font-size: 0.78rem; color: var(--dim); letter-spacing: 0.08em;
+    margin: 1.2rem 0 -0.5rem;
+  }
+
+  .card-demo {
+    background: #10161f; border: 1px solid #26303d; border-radius: 10px;
+    padding: 1rem 1.2rem; margin: 1rem 0; color: #e7edf4;
+  }
+  .card-demo .head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .card-demo .name { font-weight: 700; }
+  .card-demo .tag {
+    font-size: 0.72rem; font-weight: 700; color: #0d1117;
+    background: #2ad4e8; border-radius: 4px; padding: 0.1rem 0.5rem;
+  }
+  .card-demo .gain {
+    margin-left: auto; color: #4ade80; font-weight: 700;
+    font-family: "Barlow Condensed", sans-serif; font-size: 1.3rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .card-demo .todo { margin: 0.4rem 0 0.15rem; font-weight: 500; }
+  .card-demo .why { margin: 0; font-size: 0.85rem; color: #8fa0b3; }
+
+  .callout {
+    display: grid; grid-template-columns: auto 1fr; gap: 0.7rem;
+    border-radius: 10px; padding: 0.9rem 1.1rem; margin: 1.2rem 0;
+    font-size: 0.95rem; line-height: 1.7;
+  }
+  .callout .mark { font-size: 1.1rem; line-height: 1.5; }
+  .callout.warn { background: var(--warn-soft); border: 1px solid var(--warn); }
+  .callout.tip { background: var(--accent-soft); border: 1px solid var(--accent); }
+  .callout p { margin: 0; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 1rem 0; }
+  th {
+    text-align: left; font-size: 0.8rem; color: var(--dim); font-weight: 700;
+    border-bottom: 1px solid var(--line); padding: 0 0.8rem 0.5rem 0; white-space: nowrap;
+  }
+  td { padding: 0.55rem 0.8rem 0.55rem 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.tagcol { white-space: nowrap; font-weight: 700; color: var(--accent); }
+  .table-scroll { overflow-x: auto; }
+
+  .qa { display: grid; gap: 1rem; }
+  .qa details {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.85rem 1.2rem;
+  }
+  .qa summary { cursor: pointer; font-weight: 700; }
+  .qa summary::marker { color: var(--accent); }
+  .qa details p { color: var(--dim); font-size: 0.95rem; }
+  .qa details p b { color: var(--text); }
+
+  code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.85em; background: var(--panel-2);
+    border: 1px solid var(--line); border-radius: 5px; padding: 0.1em 0.4em;
+  }
+  .path { word-break: break-all; }
+
+  .time {
+    font-family: "Barlow Condensed", sans-serif; font-weight: 700;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  }
+
+  footer { color: var(--dim); font-size: 0.85rem; border-top: 1px solid var(--line); padding-top: 1.2rem; }
+  footer a { color: var(--accent); }
+
+  @media (max-width: 560px) {
+    h1 { font-size: 1.7rem; }
+    .step { grid-template-columns: 2.4rem 1fr; padding: 0.9rem 1rem; }
+    .step .num { font-size: 1.6rem; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    nav.toc a { transition: color 0.15s, border-color 0.15s; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<a class="back" href="./"><img src="../icons/gt7.webp" alt="" width="24" height="24">← GT7 テレメトリ（ダウンロード）</a>
+
+<header>
+  <p class="eyebrow">GT7 Telemetry</p>
+  <h1>GT7テレメトリの使い方ガイド</h1>
+  <p class="lead">PS5のGT7の走りを自動で記録して、「どのコーナーで何秒失っていて、次に何をすればいいか」までレポートにするツールです。</p>
+  <div class="flow">
+    <span>コースに出る</span><span class="arrow">→</span>
+    <span>アイコンを押す</span><span class="arrow">→</span>
+    <span>走る</span><span class="arrow">→</span>
+    <span>ブラウザで止める</span><span class="arrow">→</span>
+    <span>レポートを読む</span>
+  </div>
+  <nav class="toc" aria-label="目次">
+    <a href="#setup">最初の準備</a>
+    <a href="#run">走るたびの流れ</a>
+    <a href="#firsttrack">初めてのコース</a>
+    <a href="#report">レポートの読み方</a>
+    <a href="#history">走行記録の一覧</a>
+    <a href="#advanced">使いこなす</a>
+    <a href="#trouble">うまくいかないとき</a>
+  </nav>
+</header>
+
+<section id="setup">
+  <h2>最初の準備（1回だけ）</h2>
+  <p class="sub">必要な条件はひとつだけ。<strong>PS5とPCが同じWi-Fi／ルーターに繋がっていること。</strong>PS5側の設定変更は一切ありません。</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <div><h4>ZIPをダウンロードして、好きな場所に展開する</h4>
+      <p>ZIPは<a href="./">ダウンロードページ</a>から。展開先はデスクトップでもドキュメントでも構いません。<b>展開しないまま中のファイルを実行しないでください</b>（うまく動きません）。</p></div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div><h4>「はじめに実行してください.bat」をダブルクリック</h4>
+      <p>必要なものを自動でそろえます。<b>Pythonのインストールは要りません</b>——このPCに無ければ、必要な分だけ自動で取ってきます（2〜3分、インターネット接続が必要）。終わるとデスクトップに <b>「GT7テレメトリ」</b>（記録する）と <b>「GT7テレメトリ（記録一覧）」</b>（振り返る）の2つのアイコンができます。<b>以後はこの2つしか使いません。</b></p></div>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <span class="mark">↻</span>
+    <p><b>2回目以降は不要です。</b>「はじめに実行してください.bat」を使うのは最初の1回だけ。フォルダを別の場所に移したときだけ、もう一度実行してアイコンを作り直してください。</p>
+  </div>
+
+  <div class="callout tip">
+    <span class="mark">🛡</span>
+    <p>初回の記録開始時に<strong>Windowsファイアウォールの確認</strong>が出たら「アクセスを許可する」を押してください。拒否するとPS5からのデータを受け取れません。</p>
+  </div>
+</section>
+
+<section id="run">
+  <h2>走るたびの流れ</h2>
+  <p class="sub">毎回これだけです。黒い窓を操作するのは最初のキー1回だけで、あとはすべてブラウザで完結します。</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <div><h4>GT7でコースに出る</h4>
+      <p>タイムトライアルでもレースでも構いません。<b>メニュー画面やリプレイ中はデータが流れない</b>ので、コース上にいる状態にします。</p></div>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <div><h4>「GT7テレメトリ」をダブルクリック → 何かキーを押す</h4>
+      <p>PS5は自動で見つかります。IPアドレスを調べる必要はありません。</p></div>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <div><h4>ブラウザにライブ表示が開く → 走る</h4>
+      <p>ベストラップとのタイム差（デルタ）、コースマップ上の現在位置、4輪のタイヤ温度がリアルタイムで出ます。サブモニタやタブレットに出したままでも走れます。</p></div>
+    </div>
+    <div class="step">
+      <div class="num">4</div>
+      <div><h4>走り終えたら、ブラウザの「記録を終了してレポートへ」を押す</h4>
+      <p>そのまま同じ画面がレポートに切り替わります。データとレポートは自動で保存されています。</p></div>
+    </div>
+  </div>
+
+  <p class="console-label">黒い窓にはこんな表示が流れます（見ているだけでOK）</p>
+  <div class="console">GT7を <span class="c">192.168.1.24</span> で見つけました（0.1秒）
+  1周目: <span class="time">2:20.469</span>  1907 m
+  2周目: <span class="time">2:03.266</span>  5411 m<span class="g">（ベスト）</span>
+コース: <span class="c">ワトキンズ・グレン ロング</span>（形状から判別 / 1周 5.437 km）
+レポート: sessions\ワトキンズ・グレン-ロング\2026-08-20_2108\report.html</div>
+
+  <div class="callout tip">
+    <span class="mark">🔀</span>
+    <p><strong>記録したままコースを変えて大丈夫です。</strong>別のコースへ移動すると自動で検出して、そこまでの周を1つのセッションとして区切り、記録を続けます。停止したときにコースごとのレポートがそれぞれ作られます。</p>
+  </div>
+</section>
+
+<section id="firsttrack">
+  <h2>初めてのコースだけ、名前を聞かれます</h2>
+  <p class="sub">GT7のデータにはコース名が入っていないので、初回だけ教えてください。1周の距離が近い実在サーキットを候補に出すので、たいていは<strong>番号を1つ押すだけ</strong>です。</p>
+
+  <div class="console">このコースは初めてです（1周 5.437 km / 高低差 44 m）。
+距離が近いのはこのあたりです（合っていれば番号、違えば名前を入力）:
+  <span class="c">1.</span> ワトキンズ・グレン ロング  （公称 5.435 km / 差 +0.002 km）
+コース名（空欄のままEnterでも構いません）: <span class="g">1</span></div>
+
+  <p>一度答えれば、コースの形を記憶します。<em>同じコースは次から自動で判別</em>されて、二度と聞かれません。GTオリジナルコースなど候補が出ない場合は、名前を自由に入力してください（空欄のままでも記録はされます）。</p>
+</section>
+
+<section id="report">
+  <h2>レポートの読み方</h2>
+  <p class="sub">開いて最初に見るのは1か所だけです。あとは気になったら掘る、でちょうどいい作りになっています。</p>
+
+  <h3>まず「次に詰めるところ」の3枚だけ読む</h3>
+  <p>ページ先頭のカード3枚が結論です。どの区間で・何が原因で・何秒失っていて・次の走行で何をすればいいかが、上から効果の大きい順に並びます。</p>
+
+  <div class="card-demo">
+    <div class="head">
+      <span class="name">ターン9</span>
+      <span class="tag">トレイルブレーキ</span>
+      <span class="gain">−0.748s</span>
+    </div>
+    <p class="todo">→ 向きが変わり始めたらブレーキを抜き切り、あとはグリップに任せる</p>
+    <p class="why">速かった周はブレーキの残しが少なく、<span class="time">2:08.953</span> の周では 11.078秒</p>
+  </div>
+
+  <p>原因タグの意味はこの通りです。</p>
+  <div class="table-scroll">
+  <table>
+    <tr><th>タグ</th><th>意味</th></tr>
+    <tr><td class="tagcol">進入速度</td><td>ブレーキで速度を落としすぎている</td></tr>
+    <tr><td class="tagcol">トレイルブレーキ</td><td>旋回中のブレーキの残し方が速い周と違う</td></tr>
+    <tr><td class="tagcol">滑り</td><td>車体が流れてグリップを失っている</td></tr>
+    <tr><td class="tagcol">空転</td><td>立ち上がりでリアタイヤが空転している</td></tr>
+    <tr><td class="tagcol">ロック</td><td>ブレーキでタイヤがロックしている</td></tr>
+    <tr><td class="tagcol">ブレーキ位置</td><td>ブレーキ開始が速い周より手前／奥</td></tr>
+    <tr><td class="tagcol">ライン</td><td>走行ラインが速い周とずれている</td></tr>
+    <tr><td class="tagcol">再現性</td><td>周によってばらついている区間</td></tr>
+  </table>
+  </div>
+
+  <h3>コースマップは、区間をクリックすると拡大されます</h3>
+  <p>区間表やカードで区間を選ぶと、マップがそのコーナーにズームして、<em>基準ラップと選択中ラップの走行ラインが並んで表示</em>されます。ライン差は全体表示では見えないほど小さいので、気になるコーナーは必ずズームで見てください。<strong>Escキー</strong>で全体に戻ります。マップ上部の切り替えで「ゲイン/ロス」「速度」「ライン差」「挙動」などの色分けも選べます。</p>
+
+  <h3>⚠マークの区間は、集計から除外されています</h3>
+  <div class="callout warn">
+    <span class="mark">⚠</span>
+    <p>スピンや衝突があったと判定された区間には警告マークが付き、その周のデータは<strong>理論ベストと改善指示の根拠から自動で外れます</strong>。ミスった周のせいで「ありえない目標タイム」が出ることはありません。マークにカーソルを合わせると理由が表示されます。</p>
+  </div>
+
+  <h3>2回目からは「過去の自分」と比べられます</h3>
+  <p>同じコースを走ると、<em>歴代ベストの周が自動でレポートに追加</em>されます。ラップ一覧に「8/20のベスト」のように日付付きで並ぶので、「先週の自分よりどこが速くなったか」が見えます。</p>
+
+  <h3>タイヤ温度</h3>
+  <p>チャート列に4輪それぞれの温度カーブがあります。温度が上がり続けて終盤のグリップが落ちている、左右差が大きい、といった所見があれば挙動サマリに一文で出ます。</p>
+
+  <div class="callout tip">
+    <span class="mark">📤</span>
+    <p><strong>レポートはファイル1つで完結していて、外部への通信は一切しません。</strong><code>report.html</code> をそのままDiscordなどに投げれば、受け取った人はダブルクリックするだけで同じレポートを見られます。</p>
+  </div>
+</section>
+
+<section id="history">
+  <h2>走行記録の一覧</h2>
+  <p class="sub">「GT7テレメトリ（記録一覧）」のアイコンで開きます。これまでの走行がコースごとに並びます。</p>
+  <p>各行にその日のベスト・コース最速との差・理論ベストが出て、行の「レポート」からその日のレポートを開けます。同じコースを2回以上走ると、表の上に<em>ベストタイムの推移グラフ</em>が現れます。<strong>線が下がっていれば速くなっています。</strong>点にカーソルを合わせると日付とタイムが出ます。</p>
+  <p>データの実体は <code>sessions</code> フォルダに、コース別・日時別に保存されています。</p>
+  <div class="console">sessions\
+  index.html                        ← 一覧（アイコンが開くのはこれ）
+  ワトキンズ・グレン-ロング\
+    segments.json                   区間の名前（このコース共通）
+    2026-08-20_2108\
+      session.json                  走行データ
+      report.html                   この日のレポート</div>
+</section>
+
+<section id="advanced">
+  <h2>もっと使いこなす</h2>
+
+  <h3>区間の呼び方は「ターン○」</h3>
+  <p>区間は「ターン1」「ストレート2」のように自動で番号が振られます。F1中継の「ターン○」と同じ呼び方で、<em>番号は初回に決まってそのコースでずっと固定</em>されるので、仲間内で「ターン9が鬼門」と言えば通じます。マップ上にも番号ラベルが出るので、番号のままで十分に使えます。</p>
+  <p>どうしても実名にしたければ、<code class="path">sessions\（コース名）\segments.json</code> をメモ帳で開いて <code>name_ja</code> の値を書き換えると、そのコースの以後のレポートすべてに反映されます。</p>
+  <div class="console">{ "id": "corner_9",
+  "name_ja": "<span class="y">ターン9</span>" }   ← ここを <span class="g">"ヘアピン"</span> などに書き換える</div>
+
+  <h3>車を乗り替えて走ったとき</h3>
+  <p>1回の記録の中で車を替えても、そのまま記録を続けて大丈夫です。2車種以上で走ったセッションでは、全車混合の <code>report.html</code> に加えて<em>車ごとのレポート</em>（<code>report.（車名）.html</code>）が自動で作られます。混合レポートでは車またぎの比較（ライン、速度、ゴースト）ができ、<strong>「次に詰めるところ」の根拠は基準ラップと同じ車の周だけ</strong>に限られます。車が違えば運転の助言として成立しないからです。</p>
+  <p>一覧ページの「同じ車のベストとの差」は、<em>その車のコース内ベスト</em>と比べた数字です。速い車に乗り替えた日に大きな＋が付いたり、逆に「上達した」ように見えたりしないようにしてあります。推移グラフも車ごとに線が分かれます。</p>
+
+  <h3>仲間に配る</h3>
+  <p>フォルダを ZIP にして渡すだけです。<strong>約0.2MB</strong> なので Discord にもそのまま乗ります。受け取った人が「はじめに実行してください.bat」を1回叩けば、Python は自動で用意されます（このとき約90MBに膨らみますが、それは相手のPCの中の話です）。</p>
+  <p>渡す前に <code class="path">sessions</code> フォルダを消しておくと、自分の走行記録が付いていきません。<code class="path">known_tracks.json</code> は残しておくと、相手が同じコースを走ったとき初回からコース名が自動で付きます。</p>
+
+  <h3>知っておくと安心なこと</h3>
+  <div class="table-scroll">
+  <table>
+    <tr><th>こんなとき</th><th>どうなる</th></tr>
+    <tr><td>記録したままコースを変えた</td><td>自動で検出してセッションを区切り、記録は続く</td></tr>
+    <tr><td>コースアウトしてコース復帰した</td><td>コース変更とは区別されるので、区切られない</td></tr>
+    <tr><td>1周も完走せずに止めた</td><td>「完走したラップがありません」と表示され、何も保存されない</td></tr>
+    <tr><td>同じコースを何度も走った</td><td>一覧に積み上がり、歴代ベストが次のレポートの比較対象になる</td></tr>
+  </table>
+  </div>
+</section>
+
+<section id="trouble">
+  <h2>うまくいかないとき</h2>
+  <div class="qa">
+    <details>
+      <summary>「PlayStationが見つかりませんでした」と出る</summary>
+      <p>上から順に確認してください。ほとんどはこの3つのどれかです。</p>
+      <p><b>① GT7がコース上にあるか。</b>メニュー画面やリプレイではデータが配信されません。<br>
+      <b>② PS5とPCが同じネットワークか。</b>PCが有線でPS5が別のWi-Fi（ゲスト用など）に繋がっているのが典型例です。<br>
+      <b>③ ファイアウォールで拒否していないか。</b>初回のダイアログで拒否した場合は、Windowsの設定からこのアプリの通信を許可し直してください。</p>
+    </details>
+    <details>
+      <summary>ライブ表示のブラウザが開かない</summary>
+      <p>黒い窓に表示されているアドレス（<code>http://127.0.0.1:8770</code>）を、ブラウザに直接入力して開いてください。</p>
+    </details>
+    <details>
+      <summary>コース名を間違えて登録してしまった</summary>
+      <p>ツールのフォルダにある <code>known_tracks.json</code> をメモ帳で開き、間違えた名前の項目を削除して保存すると、次回また聞かれます。<code>sessions</code> の中の間違った名前のフォルダは、正しい名前に手で変更してください。</p>
+    </details>
+    <details>
+      <summary>レポートの目標タイム（理論ベスト）が速すぎる気がする</summary>
+      <p>理論ベストは「自分が別々の周で実際に出した区間ベストの合算」です。スピンや衝突があった区間は自動で除外されるので、原理的には到達可能なタイムです。ただし各区間のベストを1周で全部つなぐのは難しいので、目標というより「伸びしろの上限」と読んでください。</p>
+    </details>
+    <details>
+      <summary>黒い窓を閉じてしまった／記録が途中で切れた</summary>
+      <p>完走した周までは自動保存されています。「GT7テレメトリ（記録一覧）」から確認できます。もう一度アイコンを押せば、新しいセッションとして記録が始まります。</p>
+    </details>
+  </div>
+</section>
+
+<footer>
+  <p>GT7テレメトリ — PS5のGT7が配信するデータを受信して解析するツールです。ゲームソフトや本体には一切手を加えません。レポートも一覧も外部への通信は行いません。</p>
+  <p>個人がつくった非公式ツールです。ソニー・インタラクティブエンタテインメント、ポリフォニー・デジタルとは関係ありません。 · <a href="./">ダウンロードページ</a></p>
+</footer>
+
+</div>
+</body>
+</html>

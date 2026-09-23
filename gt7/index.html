@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GT7 テレメトリ - どこで何秒失ったかがわかる走行分析</title>
   <meta name="description" content="PS5 の GT7 の走りを PC で自動記録して、どのコーナーで何秒失っていて、次に何をすればいいかまでレポートにする Windows 用ツール。無料・Python のインストール不要。">
-  <meta name="theme-color" content="#0b0f15">
+  <meta name="theme-color" content="#07090d">
   <link rel="icon" href="../icons/gt7.png">
   <link rel="apple-touch-icon" href="../icons/gt7.png">
 
@@ -13,41 +13,39 @@
   <meta property="og:title" content="GT7 テレメトリ - どこで何秒失ったかがわかる走行分析">
   <meta property="og:description" content="PS5 の GT7 の走りを自動で記録して、コーナーごとのタイムロスと次にやることまでレポートに。Windows 用・無料。">
   <meta property="og:url" content="https://princetottino10-bit.github.io/LINKS/gt7/">
-  <meta property="og:image" content="https://princetottino10-bit.github.io/LINKS/gt7/og.png">
+  <meta property="og:image" content="https://princetottino10-bit.github.io/LINKS/gt7/og.jpg">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:site" content="@suke69">
 
+  <link rel="preload" as="image" href="img/hero.webp" imagesrcset="img/hero-960.webp 960w, img/hero.webp 1920w" imagesizes="100vw">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&family=Barlow+Condensed:ital,wght@0,600;0,700;1,700;1,800&display=swap" rel="stylesheet">
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0b0f15;
-      --panel: #121923;
-      --panel-2: #18212e;
-      --line: #232e3c;
-      --line-strong: #33414f;
-      --text: #e7edf4;
-      --dim: #93a3b5;
-      --faint: #62717f;
+      --bg: #07090d;
+      --bg-2: #0b0f15;
+      --panel: #10161f;
+      --panel-2: #161e29;
+      --line: #1e2835;
+      --line-strong: #2d3a4a;
+      --text: #eef3f8;
+      --dim: #97a6b8;
+      --faint: #5f6e7e;
       --cyan: #2ad4e8;
       --cyan-soft: rgba(42, 212, 232, 0.12);
       --green: #4ade80;
+      --red: #ff5a5f;
       --warn: #f0b429;
-      --radius: 14px;
       --num: 'Barlow Condensed', 'Zen Kaku Gothic New', sans-serif;
+      --ease: cubic-bezier(.2, .7, .2, 1);
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
-    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-
     body {
-      background:
-        radial-gradient(900px 520px at 85% -8%, rgba(42, 212, 232, 0.13), transparent 70%),
-        radial-gradient(600px 420px at -10% 30%, rgba(74, 222, 128, 0.05), transparent 70%),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
       font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', Meiryo, sans-serif;
       font-size: 16px;
@@ -55,201 +53,216 @@
       -webkit-font-smoothing: antialiased;
       overflow-x: hidden;
     }
-
     a { color: inherit; }
-    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
-    .num { font-family: var(--num); font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+    img { display: block; max-width: 100%; height: auto; }
+    .wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+    .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
 
     /* ===== Top bar ===== */
     .top {
+      position: absolute; inset: 0 0 auto 0; z-index: 5;
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 16px 0;
+      padding: 16px max(16px, calc((100vw - 1160px) / 2 + 16px));
     }
-    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; }
-    .brand img { width: 32px; height: 32px; border-radius: 22%; box-shadow: 0 0 0 1px var(--line-strong); }
-    .top nav { display: flex; gap: 4px; font-size: 14px; }
-    .top nav a {
-      text-decoration: none; color: var(--dim); padding: 6px 10px; border-radius: 8px;
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font-weight: 700; white-space: nowrap; }
+    .brand img { width: 32px; height: 32px; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 255, 255, .14); }
+    .top .nav { display: flex; gap: 2px; font-size: 14px; }
+    .top .nav a {
+      text-decoration: none; color: rgba(238, 243, 248, .72); padding: 6px 10px; border-radius: 8px; white-space: nowrap;
       transition: color .2s, background .2s;
     }
-    .top nav a:hover, .top nav a:focus-visible { color: var(--text); background: rgba(255, 255, 255, 0.05); outline: none; }
-    .brand, .top nav a { white-space: nowrap; }
-    @media (max-width: 420px) { .top nav a[href="#setup"] { display: none; } }
+    .top .nav a:hover, .top .nav a:focus-visible { color: var(--text); background: rgba(255, 255, 255, .07); outline: none; }
+    @media (max-width: 560px) { .top .nav a.opt { display: none; } }
 
     /* ===== Hero ===== */
     .hero {
-      display: grid; gap: 40px; align-items: center;
-      padding: 48px 0 64px;
+      position: relative; isolation: isolate; overflow: hidden;
+      min-height: min(100svh, 880px);
+      display: grid; align-items: end;
+      padding: 96px 0 56px;
     }
-    @media (min-width: 900px) { .hero { grid-template-columns: 1.05fr 1fr; padding: 72px 0 88px; } }
+    .hero-bg { position: absolute; inset: 0; z-index: -2; }
+    .hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 68% 50%; }
+    .hero::before {
+      content: ''; position: absolute; inset: 0; z-index: -1;
+      background:
+        linear-gradient(90deg, rgba(7, 9, 13, .94) 0%, rgba(7, 9, 13, .78) 34%, rgba(7, 9, 13, .12) 62%, rgba(7, 9, 13, 0) 100%),
+        linear-gradient(0deg, var(--bg) 0%, rgba(7, 9, 13, 0) 30%);
+    }
+    @media (max-width: 760px) {
+      .hero { padding-top: 58vw; }
+      .hero-bg { bottom: auto; height: 78vw; }
+      .hero-bg img { object-position: 72% 50%; }
+      .hero::before {
+        background: linear-gradient(0deg, var(--bg) 0%, var(--bg) calc(100% - 78vw + 8vw), rgba(7, 9, 13, .2) calc(100% - 40vw), rgba(7, 9, 13, .35) 100%);
+      }
+    }
+    .hero-inner { display: grid; gap: 36px; align-items: end; width: 100%; }
+    @media (min-width: 1000px) { .hero-inner { grid-template-columns: 1fr 340px; } }
 
     .eyebrow {
-      font-family: var(--num); font-weight: 600; font-size: 14px;
-      letter-spacing: 0.24em; text-transform: uppercase; color: var(--cyan);
+      display: inline-flex; align-items: center; gap: 10px;
+      font-family: var(--num); font-weight: 600; font-size: 14px; letter-spacing: .26em; text-transform: uppercase; color: var(--cyan);
     }
+    .eyebrow::before { content: ''; width: 28px; height: 2px; background: var(--cyan); }
     .hero h1 {
-      font-size: clamp(34px, 6.4vw, 58px); font-weight: 900; line-height: 1.2;
-      letter-spacing: -0.01em; margin: 12px 0 18px;
+      font-size: clamp(40px, 7.4vw, 84px); font-weight: 900; line-height: 1.12; letter-spacing: -.02em;
+      margin: 14px 0 20px; text-shadow: 0 4px 40px rgba(0, 0, 0, .5);
     }
-    .hero h1 .hl { color: var(--cyan); }
-    .hero .lead { color: var(--dim); font-size: 17px; max-width: 34em; }
+    .hero h1 em { font-style: normal; color: var(--cyan); }
+    .hero .lead { color: rgba(238, 243, 248, .82); font-size: 17px; max-width: 30em; }
+    .hero .lead strong { color: var(--text); }
 
-    .dl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin: 28px 0 18px; }
+    .dl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; margin: 28px 0 14px; }
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-      min-height: 52px; padding: 0 26px; border-radius: 999px;
+      min-height: 54px; padding: 0 28px; border-radius: 999px;
       font-size: 16px; font-weight: 700; text-decoration: none; border: 0; cursor: pointer;
       transition: transform .15s, box-shadow .2s, background .2s, border-color .2s, color .2s;
     }
     .btn:active { transform: scale(.97); }
-    .btn-dl {
-      color: #04161a;
-      background: linear-gradient(100deg, var(--cyan), var(--green));
-      box-shadow: 0 8px 28px rgba(42, 212, 232, 0.28);
-    }
-    .btn-dl:hover, .btn-dl:focus-visible { box-shadow: 0 10px 36px rgba(42, 212, 232, 0.45); outline: none; }
+    .btn-dl { color: #03151a; background: linear-gradient(100deg, var(--cyan), var(--green)); box-shadow: 0 10px 34px rgba(42, 212, 232, .32); }
+    .btn-dl:hover, .btn-dl:focus-visible { box-shadow: 0 12px 44px rgba(42, 212, 232, .5); outline: none; }
     .btn-dl svg { width: 20px; height: 20px; }
     .btn-dl[aria-disabled="true"] {
-      background: var(--panel-2); color: var(--dim); box-shadow: none; cursor: default;
-      border: 1px dashed var(--line-strong);
+      background: rgba(22, 30, 41, .85); color: var(--dim); box-shadow: none; cursor: default;
+      border: 1px dashed var(--line-strong); backdrop-filter: blur(6px);
     }
     .btn-dl[aria-disabled="true"] svg { display: none; }
-    .btn-ghost { color: var(--text); border: 1px solid var(--line-strong); background: transparent; }
+    .btn-ghost { color: var(--text); border: 1px solid rgba(255, 255, 255, .22); background: rgba(7, 9, 13, .35); backdrop-filter: blur(6px); }
     .btn-ghost:hover, .btn-ghost:focus-visible { border-color: var(--cyan); color: var(--cyan); outline: none; }
-    .dl-meta { font-size: 13px; color: var(--faint); }
+    .dl-meta { font-size: 13px; color: rgba(238, 243, 248, .55); }
 
-    .req { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; }
+    .req { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 22px; }
     .req li {
-      font-size: 13px; font-weight: 500; color: var(--dim);
-      padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.02);
+      font-size: 13px; font-weight: 500; color: rgba(238, 243, 248, .75);
+      padding: 4px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(7, 9, 13, .45); backdrop-filter: blur(6px);
     }
     .req li b { color: var(--text); font-weight: 700; }
 
-    /* レポートの例 */
-    .preview { position: relative; }
-    .preview-label {
-      position: absolute; top: -12px; left: 18px; z-index: 2;
-      font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: var(--faint);
-      background: var(--bg); padding: 0 8px;
+    /* ライブデルタの HUD */
+    .hud {
+      border: 1px solid rgba(42, 212, 232, .28); border-radius: 18px;
+      background: linear-gradient(180deg, rgba(10, 16, 23, .82), rgba(7, 9, 13, .9));
+      backdrop-filter: blur(10px); padding: 16px 18px 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .05);
     }
-    .window {
-      border: 1px solid var(--line-strong); border-radius: 16px; overflow: hidden;
-      background: linear-gradient(180deg, #0f151e, #0b1017);
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(42, 212, 232, 0.06) inset;
+    .hud-top { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--dim); letter-spacing: .06em; }
+    .hud-top .live { display: inline-flex; align-items: center; gap: 6px; font-family: var(--num); font-weight: 700; letter-spacing: .2em; color: var(--green); }
+    .hud-top .live::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 10px var(--green); animation: blink 1.4s infinite; }
+    @keyframes blink { 50% { opacity: .25; } }
+    .hud-delta {
+      font-family: var(--num); font-style: italic; font-weight: 800; font-size: 72px; line-height: 1; letter-spacing: -.01em;
+      color: var(--green); text-shadow: 0 0 28px rgba(74, 222, 128, .45); margin: 10px 0 2px; font-variant-numeric: tabular-nums;
+      transition: color .3s, text-shadow .3s;
     }
-    .window-bar {
-      display: flex; align-items: center; gap: 8px; padding: 12px 16px;
-      border-bottom: 1px solid var(--line); font-size: 12px; color: var(--faint);
+    .hud-delta.slow { color: var(--red); text-shadow: 0 0 28px rgba(255, 90, 95, .45); }
+    .hud-sub { font-size: 12px; color: var(--dim); }
+    .hud-bar { position: relative; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .06); margin: 12px 0; overflow: hidden; }
+    .hud-bar i { position: absolute; top: 0; bottom: 0; right: 50%; width: 30%; background: var(--green); border-radius: 4px; transition: width .4s var(--ease), background .3s, left .4s, right .4s; }
+    .hud-bar::after { content: ''; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: rgba(255, 255, 255, .35); }
+    .hud-sectors { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+    .hud-sectors span {
+      font-family: var(--num); font-weight: 600; font-size: 13px; text-align: center; padding: 3px 0; border-radius: 5px;
+      border: 1px solid rgba(74, 222, 128, .35); color: var(--green); background: rgba(74, 222, 128, .07);
     }
-    .window-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-strong); }
-    .window-bar span { margin-left: 8px; }
-    .window-body { padding: 18px; display: grid; gap: 14px; }
-    .w-title { font-size: 12px; font-weight: 700; color: var(--dim); letter-spacing: 0.06em; }
+    .hud-sectors span.l { border-color: rgba(255, 90, 95, .4); color: var(--red); background: rgba(255, 90, 95, .07); }
+    .hud-sectors span.n { border-color: var(--line-strong); color: var(--faint); background: none; }
+    .hud-note { margin-top: 10px; font-size: 11px; color: var(--faint); }
+    @media (max-width: 999px) { .hud { max-width: 420px; } }
 
-    .fix {
-      border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
-      padding: 14px 16px;
-    }
-    .fix-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 10px; }
-    .fix-name { font-weight: 700; }
-    .tag {
-      font-size: 11px; font-weight: 700; color: #06171b; background: var(--cyan);
-      border-radius: 4px; padding: 1px 8px; line-height: 1.7;
-    }
-    .gain { margin-left: auto; color: var(--green); font-size: 24px; font-weight: 700; line-height: 1; }
-    .fix-todo { margin-top: 6px; font-weight: 500; font-size: 15px; }
-    .fix-why { font-size: 13px; color: var(--dim); }
+    /* ===== Section base ===== */
+    section { position: relative; padding: 88px 0; }
+    .s-label { display: inline-flex; align-items: center; gap: 10px; font-family: var(--num); font-weight: 600; font-size: 13px; letter-spacing: .26em; color: var(--cyan); text-transform: uppercase; }
+    .s-label b { font-weight: 700; color: var(--faint); letter-spacing: .1em; }
+    .s-title { font-size: clamp(28px, 4.6vw, 44px); font-weight: 900; line-height: 1.25; letter-spacing: -.01em; margin: 10px 0 14px; text-wrap: balance; }
+    .s-title em { font-style: normal; color: var(--cyan); }
+    .s-sub { color: var(--dim); max-width: 36em; }
 
-    .laps {
-      display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: baseline;
-      border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; font-size: 14px;
+    /* 手順（タイミングタワー風） */
+    .flow { list-style: none; display: grid; gap: 10px; counter-reset: f; margin-top: 36px; }
+    @media (min-width: 820px) { .flow { grid-template-columns: repeat(5, 1fr); gap: 0; } }
+    .flow li { counter-increment: f; position: relative; padding: 18px 18px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+    @media (min-width: 820px) {
+      .flow li { border-radius: 0; border-left-width: 0; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%); padding-left: 30px; }
+      .flow li:first-child { border-left-width: 1px; border-radius: 12px 0 0 12px; clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%); padding-left: 18px; }
+      .flow li:last-child { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 14px 50%); border-radius: 0 12px 12px 0; }
     }
-    .laps .t { font-size: 20px; font-weight: 700; }
-    .laps .d { color: var(--dim); font-size: 13px; }
-    .laps .best { color: var(--green); font-size: 13px; font-weight: 700; }
-    .laps .course { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; color: var(--dim); font-size: 13px; }
-    .laps .course b { color: var(--cyan); font-weight: 500; }
-
-    /* ===== Sections ===== */
-    section { padding: 56px 0; border-top: 1px solid var(--line); }
-    .s-label { font-family: var(--num); font-weight: 600; font-size: 13px; letter-spacing: 0.24em; color: var(--cyan); text-transform: uppercase; }
-    .s-title { font-size: clamp(24px, 4vw, 32px); font-weight: 900; line-height: 1.35; margin: 6px 0 8px; text-wrap: balance; }
-    .s-sub { color: var(--dim); max-width: 40em; margin-bottom: 28px; }
-
-    /* 流れ */
-    .flow { list-style: none; display: grid; gap: 10px; counter-reset: f; }
-    @media (min-width: 760px) { .flow { grid-template-columns: repeat(5, 1fr); } }
-    .flow li {
-      counter-increment: f; position: relative;
-      border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
-      padding: 14px 16px 16px;
-    }
-    .flow li::before {
-      content: counter(f); display: block;
-      font-family: var(--num); font-weight: 700; font-size: 28px; line-height: 1; color: var(--cyan); margin-bottom: 8px;
+    .flow li::before { content: '0' counter(f); display: block; font-family: var(--num); font-style: italic; font-weight: 800; font-size: 26px; line-height: 1; color: var(--cyan); margin-bottom: 8px; }
+    @media (max-width: 819px) {
+      .flow li { padding: 14px 16px 14px 66px; }
+      .flow li::before { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); margin: 0; }
     }
     .flow b { display: block; font-size: 15px; line-height: 1.5; }
     .flow span { display: block; font-size: 13px; color: var(--dim); line-height: 1.6; margin-top: 4px; }
 
-    /* できること */
-    .features { display: grid; gap: 14px; }
-    @media (min-width: 700px) { .features { grid-template-columns: repeat(2, 1fr); } }
-    @media (min-width: 1000px) { .features { grid-template-columns: repeat(3, 1fr); } }
-    .feature {
-      border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
-      padding: 20px 20px 22px;
+    /* 画面つきの特徴 */
+    .feature { display: grid; gap: 36px; align-items: center; }
+    @media (min-width: 960px) {
+      .feature { grid-template-columns: 5fr 7fr; gap: 56px; }
+      .feature.rev { grid-template-columns: 7fr 5fr; }
+      .feature.rev .copy { order: 2; }
     }
-    .feature .ico {
-      width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center;
-      background: var(--cyan-soft); color: var(--cyan); margin-bottom: 12px;
-    }
-    .feature .ico svg { width: 22px; height: 22px; }
-    .feature h3 { font-size: 17px; font-weight: 700; line-height: 1.45; margin-bottom: 6px; }
-    .feature p { font-size: 14px; color: var(--dim); line-height: 1.75; }
-    .feature.wide { grid-column: 1 / -1; }
+    .points { list-style: none; display: grid; gap: 14px; margin-top: 24px; }
+    .points li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 15px; color: var(--dim); line-height: 1.7; }
+    .points li::before { content: ''; width: 8px; height: 8px; margin: 9px 0 0 6px; border-radius: 2px; background: var(--cyan); transform: rotate(45deg); }
+    .points li b { color: var(--text); font-weight: 700; }
 
-    .tags { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 14px; }
-    .tags li {
-      font-size: 13px; padding: 4px 12px; border-radius: 8px;
-      background: var(--panel-2); border: 1px solid var(--line);
+    .screen { position: relative; }
+    .screen::before {
+      content: ''; position: absolute; inset: 8% 6% -6% 6%; z-index: -1;
+      background: radial-gradient(closest-side, rgba(42, 212, 232, .22), transparent); filter: blur(24px);
     }
+    .screen-frame {
+      border-radius: 14px; overflow: hidden; border: 1px solid var(--line-strong); background: #0a0e14;
+      box-shadow: 0 40px 90px rgba(0, 0, 0, .55), 0 0 0 1px rgba(42, 212, 232, .06);
+    }
+    .screen-bar { display: flex; align-items: center; gap: 7px; padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 12px; color: var(--faint); background: #0c1118; }
+    .screen-bar i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-strong); }
+    .screen-bar span { margin-left: 8px; font-family: ui-monospace, Consolas, monospace; }
+    .screen figcaption { margin-top: 12px; font-size: 12px; color: var(--faint); text-align: right; }
+    @media (min-width: 960px) {
+      .tilt .screen-frame { transform: perspective(1600px) rotateY(-7deg) rotateX(2deg); transition: transform .6s var(--ease); }
+      .feature.rev .tilt .screen-frame { transform: perspective(1600px) rotateY(7deg) rotateX(2deg); }
+      .tilt:hover .screen-frame { transform: none; }
+    }
+
+    .sec-alt { background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 18%, var(--bg-2) 82%, var(--bg) 100%); }
+
+    /* 原因タグ */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin-top: 22px; }
+    .tags li { font-size: 13px; padding: 5px 12px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); color: var(--dim); }
     .tags li b { color: var(--cyan); font-weight: 700; margin-right: 6px; }
 
+    /* 小さな特徴 */
+    .minis { display: grid; gap: 14px; margin-top: 40px; }
+    @media (min-width: 700px) { .minis { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1000px) { .minis { grid-template-columns: repeat(4, 1fr); } }
+    .mini { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 20px 20px 22px; }
+    .mini .ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: var(--cyan-soft); color: var(--cyan); margin-bottom: 12px; }
+    .mini .ico svg { width: 22px; height: 22px; }
+    .mini h3 { font-size: 16px; font-weight: 700; line-height: 1.5; margin-bottom: 6px; }
+    .mini p { font-size: 14px; color: var(--dim); line-height: 1.75; }
+
     /* はじめかた */
+    .setup { display: grid; gap: 40px; }
+    @media (min-width: 960px) { .setup { grid-template-columns: 5fr 7fr; gap: 56px; } }
     .steps { list-style: none; display: grid; gap: 12px; counter-reset: s; }
-    .steps li {
-      counter-increment: s;
-      display: grid; grid-template-columns: 44px 1fr; gap: 14px;
-      border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 16px 18px;
-    }
-    .steps li::before {
-      content: counter(s); font-family: var(--num); font-weight: 700; font-size: 32px; line-height: 1.05; color: var(--cyan);
-    }
+    .steps li { counter-increment: s; display: grid; grid-template-columns: 52px 1fr; gap: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 18px 20px; }
+    .steps li::before { content: counter(s); font-family: var(--num); font-style: italic; font-weight: 800; font-size: 40px; line-height: 1; color: var(--cyan); }
     .steps b { display: block; font-size: 16px; }
     .steps p { font-size: 14px; color: var(--dim); margin-top: 2px; }
     .steps p strong { color: var(--text); }
+    .note { display: grid; grid-template-columns: auto 1fr; gap: 10px; margin-top: 14px; padding: 14px 16px; border-radius: 12px; font-size: 14px; line-height: 1.7; background: var(--cyan-soft); border: 1px solid rgba(42, 212, 232, .4); }
+    code { font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: .86em; background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: .1em .4em; }
 
-    .note {
-      display: grid; grid-template-columns: auto 1fr; gap: 10px;
-      margin-top: 14px; padding: 14px 16px; border-radius: 12px; font-size: 14px; line-height: 1.7;
-      background: var(--cyan-soft); border: 1px solid rgba(42, 212, 232, 0.4);
-    }
-    .note.warn { background: rgba(240, 180, 41, 0.1); border-color: rgba(240, 180, 41, 0.5); }
-
-    code {
-      font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace; font-size: 0.86em;
-      background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 0.1em 0.4em;
-    }
-
-    /* 安心 */
-    .safe { list-style: none; display: grid; gap: 12px; }
-    @media (min-width: 760px) { .safe { grid-template-columns: repeat(3, 1fr); } }
+    .safe { list-style: none; display: grid; gap: 18px; margin-top: 26px; }
     .safe li { border-left: 2px solid var(--green); padding: 2px 0 2px 16px; }
     .safe b { display: block; }
     .safe span { font-size: 14px; color: var(--dim); }
 
     /* Q&A */
-    .qa { display: grid; gap: 10px; }
+    .qa { display: grid; gap: 10px; margin-top: 28px; }
     .qa details { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); padding: 14px 18px; }
     .qa summary { cursor: pointer; font-weight: 700; }
     .qa summary::marker { color: var(--cyan); }
@@ -259,43 +272,58 @@
     .more a { color: var(--cyan); text-underline-offset: 4px; }
 
     /* 最後のダウンロード */
-    .cta {
-      text-align: center; padding: 64px 0 72px;
-      background: radial-gradient(600px 260px at 50% 0%, rgba(42, 212, 232, 0.12), transparent 70%);
-    }
-    .cta img { width: 72px; height: 72px; border-radius: 22%; box-shadow: 0 0 0 1px var(--line-strong), 0 12px 32px rgba(0, 0, 0, 0.4); }
-    .cta h2 { font-size: clamp(24px, 4vw, 30px); font-weight: 900; margin: 16px 0 4px; }
-    .cta .dl-row { justify-content: center; margin: 22px 0 8px; }
+    .cta { position: relative; isolation: isolate; overflow: hidden; text-align: center; padding: 110px 0 100px; }
+    .cta-bg { position: absolute; inset: 0; z-index: -2; }
+    .cta-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 70% 60%; opacity: .6; }
+    .cta::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(70% 90% at 50% 50%, rgba(7, 9, 13, .55), var(--bg) 80%), linear-gradient(180deg, var(--bg), transparent 30%, transparent 70%, var(--bg)); }
+    .cta img.icon { width: 76px; height: 76px; margin: 0 auto; border-radius: 22%; box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 14px 36px rgba(0, 0, 0, .5); }
+    .cta h2 { font-size: clamp(28px, 4.6vw, 44px); font-weight: 900; margin: 18px 0 6px; }
+    .cta p.sub { color: var(--dim); }
+    .cta .dl-row { justify-content: center; margin: 26px 0 10px; }
 
-    footer { border-top: 1px solid var(--line); padding: 24px 0 40px; font-size: 13px; color: var(--faint); line-height: 1.8; }
+    footer { border-top: 1px solid var(--line); padding: 26px 0 44px; font-size: 13px; color: var(--faint); line-height: 1.8; }
     footer .links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-bottom: 8px; }
     footer a { color: var(--dim); text-underline-offset: 4px; }
+
+    /* スクロールで出てくる */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+    .reveal.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      .hud-top .live::before { animation: none; }
+      .tilt .screen-frame { transform: none !important; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="top">
-      <a class="brand" href="./"><img src="../icons/gt7.webp" alt="" width="32" height="32">GT7 テレメトリ</a>
-      <nav aria-label="ページ内">
-        <a href="#setup">はじめかた</a>
-        <a href="guide.html">使い方ガイド</a>
-      </nav>
-    </header>
+  <nav class="top" aria-label="ページ内">
+    <a class="brand" href="./"><img src="../icons/gt7.webp" alt="" width="32" height="32">GT7 テレメトリ</a>
+    <div class="nav">
+      <a class="opt" href="#features">できること</a>
+      <a class="opt" href="#setup">はじめかた</a>
+      <a href="guide.html">使い方ガイド</a>
+    </div>
+  </nav>
 
-    <div class="hero">
+  <header class="hero">
+    <picture class="hero-bg">
+      <img src="img/hero.webp" srcset="img/hero-960.webp 960w, img/hero.webp 1920w" sizes="100vw" alt="" width="1920" height="1080" fetchpriority="high">
+    </picture>
+    <div class="wrap hero-inner">
       <div>
         <p class="eyebrow">GT7 Telemetry · for Windows</p>
-        <h1>どこで何秒、<br><span class="hl">失ったか。</span></h1>
+        <h1>どこで何秒、<br><em>失ったか。</em></h1>
         <p class="lead">PS5 の GT7 の走りを PC で自動記録。コーナーごとのタイムロスと、<strong>次の走行で何をすればいいか</strong>までレポートにします。</p>
         <div class="dl-row">
           <a class="btn btn-dl js-dl" href="gt7-telemetry.zip" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
             <span class="js-dl-text">ダウンロード</span>
           </a>
-          <a class="btn btn-ghost" href="#how">どんなツール？</a>
+          <a class="btn btn-ghost" href="#features">画面を見る</a>
         </div>
         <p class="dl-meta js-dl-meta">無料 · Windows · ZIP</p>
-        <ul class="req" aria-label="使うのに必要なもの" style="margin-top:18px">
+        <ul class="req" aria-label="使うのに必要なもの">
           <li><b>PS5</b> と GT7</li>
           <li><b>Windows</b> の PC</li>
           <li>同じ <b>Wi-Fi / ルーター</b></li>
@@ -303,134 +331,163 @@
         </ul>
       </div>
 
-      <div class="preview">
-        <span class="preview-label">レポートの例</span>
-        <div class="window" role="img" aria-label="レポートの例：ターン9 トレイルブレーキで 0.748 秒の伸びしろ。1周目 2分20秒469、2周目 2分03秒266 がベスト。コースはワトキンズ・グレン ロング。">
-          <div class="window-bar"><i></i><i></i><i></i><span>report.html</span></div>
-          <div class="window-body">
-            <p class="w-title">次に詰めるところ</p>
-            <div class="fix">
-              <div class="fix-head">
-                <span class="fix-name">ターン9</span>
-                <span class="tag">トレイルブレーキ</span>
-                <span class="gain num">−0.748s</span>
-              </div>
-              <p class="fix-todo">→ 向きが変わり始めたらブレーキを抜き切り、あとはグリップに任せる</p>
-              <p class="fix-why">速かった周はブレーキの残しが少ない</p>
-            </div>
-            <div class="laps">
-              <span class="d">1周目</span><span class="t num">2:20.469</span><span></span>
-              <span class="d">2周目</span><span class="t num">2:03.266</span><span class="best">ベスト</span>
-              <span class="course">コース：<b>ワトキンズ・グレン ロング</b>（形から自動で判別）</span>
-            </div>
-          </div>
+      <aside class="hud" aria-label="ライブ表示のイメージ">
+        <div class="hud-top"><span class="live">LIVE</span><span>LAP <b class="num js-lap">2</b> · BEST <b class="num">1:20.600</b></span></div>
+        <div class="hud-delta js-delta" aria-hidden="true">−0.275</div>
+        <div class="hud-sub">ベストラップ比</div>
+        <div class="hud-bar" aria-hidden="true"><i class="js-bar"></i></div>
+        <div class="hud-sectors js-sectors" aria-hidden="true">
+          <span>−.04</span><span>−.01</span><span>−.04</span><span class="l">+.02</span><span>−.13</span><span class="n">—</span>
         </div>
-      </div>
+        <p class="hud-note">走行中はこの差が大きく出続けます（数字はイメージ）</p>
+      </aside>
     </div>
-  </div>
+  </header>
 
   <section id="how">
     <div class="wrap">
-      <p class="s-label">How it works</p>
-      <h2 class="s-title">走るたびにやることは、これだけ。</h2>
-      <p class="s-sub">黒い窓で操作するのは、最初にキーを 1 回押すところだけ。あとはブラウザで完結します。PS5 側の設定は変えません。</p>
-      <ol class="flow">
-        <li><b>コースに出る</b><span>タイムトライアルでもレースでも OK</span></li>
-        <li><b>アイコンを押す</b><span>PS5 は自動で見つかる。IP を調べなくていい</span></li>
-        <li><b>走る</b><span>ブラウザにライブ表示が開く</span></li>
-        <li><b>ブラウザで止める</b><span>「記録を終了してレポートへ」</span></li>
-        <li><b>レポートを読む</b><span>データもレポートも自動で保存</span></li>
+      <p class="s-label reveal">How it works</p>
+      <h2 class="s-title reveal">走るたびにやることは、<em>これだけ。</em></h2>
+      <p class="s-sub reveal">黒い窓で操作するのは、最初にキーを 1 回押すところだけ。あとはブラウザで完結します。PS5 側の設定は変えません。</p>
+      <ol class="flow reveal">
+        <li><b>コースに出る</b><span>タイムトライアルでもレースでも</span></li>
+        <li><b>アイコンを押す</b><span>PS5 は自動で見つかる</span></li>
+        <li><b>走る</b><span>ブラウザにライブ表示</span></li>
+        <li><b>止める</b><span>コースを降りれば自動でも</span></li>
+        <li><b>レポートを読む</b><span>データもレポートも自動保存</span></li>
       </ol>
+    </div>
+  </section>
+
+  <section id="features" class="sec-alt">
+    <div class="wrap feature">
+      <div class="copy">
+        <p class="s-label reveal">Live <b>01</b></p>
+        <h2 class="s-title reveal">走りながら、<br><em>差</em>が見える。</h2>
+        <p class="s-sub reveal">ベストラップとのタイム差（デルタ）を画面いっぱいに。サブモニタやタブレットに出したまま走れます。</p>
+        <ul class="points reveal">
+          <li><span><b>区間ごとの差</b>も、抜けた順に並ぶ</span></li>
+          <li><span><b>速度・ギア・ペダル</b>と、4 輪のタイヤ温度・ロック</span></li>
+          <li><span>「スマホで見る」の QR で、<b>同じ Wi-Fi のスマホ</b>にも出せる</span></li>
+        </ul>
+      </div>
+      <figure class="screen tilt reveal">
+        <div class="screen-frame">
+          <div class="screen-bar"><i></i><i></i><i></i><span>127.0.0.1:8770</span></div>
+          <img src="img/live.webp" alt="ライブ表示の画面。ベストラップ比 −0.275 秒を大きく表示し、区間ごとの差、速度 234km/h・5 速、ブレーキと前輪のロック、4 輪のタイヤ温度、コースマップ上の現在位置が並ぶ" width="1200" height="750" loading="lazy" decoding="async">
+        </div>
+        <figcaption>画面はデモ走行（架空のサーキット）のデータです</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec-alt">
+    <div class="wrap feature rev">
+      <div class="copy">
+        <p class="s-label reveal">Report <b>02</b></p>
+        <h2 class="s-title reveal">次に詰めるところを、<br><em>3 つだけ。</em></h2>
+        <p class="s-sub reveal">走り終えると、そのままレポートに切り替わります。最初に読むのは先頭のカード 3 枚だけ。</p>
+        <ul class="points reveal">
+          <li><span>どの区間で、何が原因で、<b>何秒失ったか</b>。効果の大きい順に</span></li>
+          <li><span>コースマップで<b>区間ごとの速い・遅い</b>が色でわかる。ゴースト再生も</span></li>
+          <li><span>スピンや接触があった周は、<b>目標タイムの計算から自動で外す</b></span></li>
+        </ul>
+        <ul class="tags reveal" aria-label="原因のタグ">
+          <li><b>進入速度</b></li><li><b>トレイルブレーキ</b></li><li><b>ブレーキ位置</b></li><li><b>ライン</b></li>
+          <li><b>滑り</b></li><li><b>空転</b></li><li><b>ロック</b></li><li><b>再現性</b></li>
+        </ul>
+      </div>
+      <figure class="screen tilt reveal">
+        <div class="screen-frame">
+          <div class="screen-bar"><i></i><i></i><i></i><span>report.html</span></div>
+          <img src="img/report.webp" alt="レポートの画面。ベストラップ 1分19秒867・理論ベスト 1分19秒550 の下に「次に詰めるところ」のカードが 3 枚、その下にゲインとロスで色分けしたコースマップと区間ごとの差のグラフ" width="1200" height="833" loading="lazy" decoding="async">
+        </div>
+        <figcaption>画面はデモ走行（架空のサーキット）のデータです</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="sec-alt">
+    <div class="wrap feature">
+      <div class="copy">
+        <p class="s-label reveal">History <b>03</b></p>
+        <h2 class="s-title reveal">先週の自分と、<br><em>比べられる。</em></h2>
+        <p class="s-sub reveal">走行はコースごとに積み上がります。同じコースを 2 回以上走ると、ベストタイムの推移がグラフに。</p>
+        <ul class="points reveal">
+          <li><span><b>線が下がっていれば速くなっています</b></span></li>
+          <li><span>同じコースを走ると、<b>歴代ベストの周</b>が次のレポートの比較相手に</span></li>
+          <li><span>車を乗り替えても、<b>その車のベスト</b>と比べるので数字がぶれない</span></li>
+        </ul>
+      </div>
+      <figure class="screen tilt reveal">
+        <div class="screen-frame">
+          <div class="screen-bar"><i></i><i></i><i></i><span>sessions/index.html</span></div>
+          <img src="img/history.webp" alt="走行記録の一覧。同じコースの 3 回分のベストタイムが 1分20秒967 から 1分19秒867 へ下がっていく推移グラフと、走行日ごとの表" width="980" height="536" loading="lazy" decoding="async">
+        </div>
+        <figcaption>画面はデモ走行（架空のサーキット）のデータです</figcaption>
+      </figure>
     </div>
   </section>
 
   <section>
     <div class="wrap">
-      <p class="s-label">Features</p>
-      <h2 class="s-title">できること</h2>
-      <p class="s-sub">開いて最初に見るのは「次に詰めるところ」の 3 枚だけ。気になったら掘る、でちょうどいい作りです。</p>
-      <div class="features">
-        <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16M7 16V9m5 7V5m5 11v-4"/></svg></div>
-          <h3>次に詰めるところ</h3>
-          <p>どの区間で、何が原因で、何秒失っていて、次に何をすればいいか。効果の大きい順に 3 枚のカードで出ます。</p>
-        </article>
-        <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/><circle cx="12" cy="16" r="1.4" fill="currentColor"/></svg></div>
-          <h3>走りながらライブ表示</h3>
-          <p>ベストラップとのタイム差（デルタ）、コースマップ上の現在位置、4 輪のタイヤ温度をリアルタイムで。サブモニタやタブレットに出したままでも。</p>
-        </article>
-        <article class="feature">
+      <p class="s-label reveal">And more</p>
+      <h2 class="s-title reveal">ほかにも、ちゃんと考えてあります。</h2>
+      <div class="minis">
+        <article class="mini reveal">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6c3-3 9-3 12 1s1 9-3 10-9-1-9-5 3-4 5-3"/><circle cx="10" cy="9" r="1.4" fill="currentColor"/></svg></div>
           <h3>コースは形で自動判別</h3>
-          <p>初めてのコースだけ名前を聞かれます。1 周の距離が近い実在サーキットを候補に出すので、たいていは番号を 1 つ押すだけ。次からは自動です。</p>
+          <p>名前を聞かれるのは初めてのコースだけ。距離が近い実在サーキットを候補に出すので、たいていは番号を押すだけです。</p>
         </article>
-        <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l5 5 4-3 7 8"/><path d="M15 16h5v-5"/></svg></div>
-          <h3>過去の自分と比べる</h3>
-          <p>同じコースを走ると、歴代ベストの周が自動でレポートに入ります。記録一覧では、ベストタイムの推移がグラフで見られます。</p>
+        <article class="mini reveal">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h6l2-3 2 6 2-3h4"/></svg></div>
+          <h3>コースも車も、替えてそのまま</h3>
+          <p>記録したまま別のコースへ移ると自動で区切ります。車を替えた日は、車ごとのレポートも作ります。</p>
         </article>
-        <article class="feature">
-          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4m0 3v.01"/></svg></div>
-          <h3>ミスった周は集計から外す</h3>
-          <p>スピンや衝突があった区間には ⚠ が付き、理論ベストや改善の根拠から自動で外れます。ありえない目標タイムは出ません。</p>
-        </article>
-        <article class="feature">
+        <article class="mini reveal">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></div>
           <h3>レポートはファイル 1 つ</h3>
-          <p><code>report.html</code> だけで完結して、外部への通信はしません。Discord などにそのまま投げれば、相手はダブルクリックで同じレポートを見られます。</p>
+          <p><code>report.html</code> だけで完結。Discord に投げれば、受け取った人もダブルクリックで同じレポートを見られます。</p>
         </article>
-        <article class="feature wide">
-          <h3>原因は 8 つのタグで分かります</h3>
-          <ul class="tags">
-            <li><b>進入速度</b>ブレーキで落としすぎ</li>
-            <li><b>トレイルブレーキ</b>旋回中のブレーキの残し方</li>
-            <li><b>滑り</b>車体が流れてグリップを失う</li>
-            <li><b>空転</b>立ち上がりでリアが空転</li>
-            <li><b>ロック</b>ブレーキでタイヤがロック</li>
-            <li><b>ブレーキ位置</b>開始が速い周より手前／奥</li>
-            <li><b>ライン</b>走行ラインが速い周とずれる</li>
-            <li><b>再現性</b>周によってばらつく区間</li>
-          </ul>
+        <article class="mini reveal">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>ゲームにも本体にも触れない</h3>
+          <p>GT7 が配信しているデータを、同じネットワークの PC で受け取るだけ。外部への通信もしません。</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section id="setup">
-    <div class="wrap">
-      <p class="s-label">Setup</p>
-      <h2 class="s-title">はじめかた（最初の 1 回だけ）</h2>
-      <p class="s-sub">条件はひとつだけ。<strong>PS5 と PC が同じ Wi-Fi／ルーターにつながっていること。</strong></p>
-      <ol class="steps">
-        <li><div><b>ZIP をダウンロードして展開する</b><p>デスクトップでもドキュメントでも、好きな場所で。<strong>展開しないまま中のファイルを実行しないでください</strong>（うまく動きません）。</p></div></li>
-        <li><div><b>「はじめに実行してください.bat」をダブルクリック</b><p>必要なものを自動でそろえます。<strong>Python のインストールは要りません。</strong>PC に無ければ必要な分だけ自動で取ってきます（2〜3 分、インターネット接続が必要）。</p></div></li>
-        <li><div><b>デスクトップに 2 つのアイコンができる</b><p><strong>「GT7テレメトリ」</strong>（記録する）と <strong>「GT7テレメトリ（記録一覧）」</strong>（振り返る）。以後はこの 2 つしか使いません。</p></div></li>
-      </ol>
-      <div class="note">
-        <span aria-hidden="true">🛡</span>
-        <p>初めて記録を始めるときに<strong>Windows ファイアウォールの確認</strong>が出たら「アクセスを許可する」を押してください。拒否すると PS5 からのデータを受け取れません。</p>
+  <section id="setup" class="sec-alt">
+    <div class="wrap setup">
+      <div>
+        <p class="s-label reveal">Setup</p>
+        <h2 class="s-title reveal">はじめかた</h2>
+        <p class="s-sub reveal">最初の 1 回だけ。条件はひとつ、<strong>PS5 と PC が同じ Wi-Fi／ルーターにつながっていること。</strong></p>
+        <ul class="safe reveal">
+          <li><b>PS5 の設定変更なし</b><span>本体やゲームの設定はそのまま使えます。</span></li>
+          <li><b>データは手元のフォルダに</b><span>走行は <code>sessions</code> フォルダに、コース別・日時別で保存されます。</span></li>
+        </ul>
+      </div>
+      <div>
+        <ol class="steps reveal">
+          <li><div><b>ZIP をダウンロードして展開する</b><p>デスクトップでもドキュメントでも。<strong>展開しないまま中のファイルを実行しないでください</strong>（うまく動きません）。</p></div></li>
+          <li><div><b>「はじめに実行してください.bat」をダブルクリック</b><p>必要なものを自動でそろえます。<strong>Python のインストールは要りません。</strong>PC に無ければ必要な分だけ自動で取ってきます（2〜3 分、インターネット接続が必要）。</p></div></li>
+          <li><div><b>デスクトップに 2 つのアイコンができる</b><p><strong>「GT7テレメトリ」</strong>（記録する）と <strong>「GT7テレメトリ（記録一覧）」</strong>（振り返る）。以後はこの 2 つしか使いません。</p></div></li>
+        </ol>
+        <div class="note reveal">
+          <span aria-hidden="true">🛡</span>
+          <p>初めて記録を始めるときに<strong>Windows ファイアウォールの確認</strong>が出たら「アクセスを許可する」を押してください。拒否すると PS5 からのデータを受け取れません。</p>
+        </div>
       </div>
     </div>
   </section>
 
   <section>
     <div class="wrap">
-      <p class="s-label">Safe</p>
-      <h2 class="s-title">ゲームにも本体にも、手を加えません</h2>
-      <ul class="safe" style="margin-top:22px">
-        <li><b>PS5 の設定変更なし</b><span>GT7 が配信しているデータを、同じネットワークの PC で受け取るだけです。</span></li>
-        <li><b>外部への通信なし</b><span>記録もレポートも一覧も、すべて PC の中で完結します。</span></li>
-        <li><b>データは手元のフォルダに</b><span>走行は <code>sessions</code> フォルダに、コース別・日時別で保存されます。</span></li>
-      </ul>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <p class="s-label">Q &amp; A</p>
-      <h2 class="s-title">うまくいかないとき</h2>
-      <div class="qa" style="margin-top:22px">
+      <p class="s-label reveal">Q &amp; A</p>
+      <h2 class="s-title reveal">うまくいかないとき</h2>
+      <div class="qa reveal">
         <details>
           <summary>「PlayStationが見つかりませんでした」と出る</summary>
           <p><b>① GT7 がコース上にあるか。</b>メニュー画面やリプレイではデータが配信されません。<br>
@@ -446,15 +503,16 @@
           <p>完走した周までは自動で保存されています。「GT7テレメトリ（記録一覧）」から確認できます。</p>
         </details>
       </div>
-      <p class="more">レポートの読み方や、コース名・区間名の変え方などは <a href="guide.html">使い方ガイド</a> へ。</p>
+      <p class="more reveal">レポートの読み方や、コース名・区間名の変え方などは <a href="guide.html">使い方ガイド</a> へ。</p>
     </div>
   </section>
 
   <div class="cta">
+    <div class="cta-bg"><img src="img/hero-960.webp" alt="" width="960" height="540" loading="lazy" decoding="async"></div>
     <div class="wrap">
-      <img src="../icons/gt7.webp" alt="" width="72" height="72">
-      <h2>GT7 テレメトリ</h2>
-      <p class="s-sub" style="margin:0 auto">走りを記録して、どこで何秒失ったかをレポートに。</p>
+      <img class="icon" src="../icons/gt7.webp" alt="" width="76" height="76">
+      <h2>次の 1 周を、速くする。</h2>
+      <p class="sub">走りを記録して、どこで何秒失ったかをレポートに。</p>
       <div class="dl-row">
         <a class="btn btn-dl js-dl" href="gt7-telemetry.zip" download>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
@@ -472,7 +530,7 @@
         <a href="../">WORKS（つくったアプリ一覧）</a>
         <a href="https://x.com/suke69" target="_blank" rel="noopener noreferrer">X（不具合・要望はこちら）</a>
       </div>
-      <p>個人がつくった非公式ツールです。ソニー・インタラクティブエンタテインメント、ポリフォニー・デジタルとは関係ありません。「グランツーリスモ」「GT7」「PlayStation」は各社の商標です。</p>
+      <p>個人がつくった非公式ツールです。ソニー・インタラクティブエンタテインメント、ポリフォニー・デジタルとは関係ありません。「グランツーリスモ」「GT7」「PlayStation」は各社の商標です。トップの画像はイメージです。</p>
     </div>
   </footer>
 
@@ -506,6 +564,48 @@
         const label = size < 1024 * 1024 ? `${Math.max(1, Math.round(size / 1024))} KB` : `${(size / 1024 / 1024).toFixed(1)} MB`;
         document.querySelectorAll('.js-dl-meta').forEach((m) => { m.textContent = `無料 · Windows · ZIP ${label}`; });
       }
+    })();
+
+    /* スクロールで出てくる */
+    (() => {
+      const els = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) { els.forEach((e) => e.classList.add('in')); return; }
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((en) => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+      }, { rootMargin: '0px 0px -8% 0px' });
+      els.forEach((e) => io.observe(e));
+    })();
+
+    /* ヒーローのデルタ表示を、走っているように少しずつ動かす（イメージ） */
+    (() => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const delta = document.querySelector('.js-delta');
+      const bar = document.querySelector('.js-bar');
+      const sectors = [...document.querySelectorAll('.js-sectors span')];
+      let t = 0, d = -0.275, sec = 5;
+      const fmt = (v) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(3);
+      const paint = () => {
+        delta.textContent = fmt(d);
+        delta.classList.toggle('slow', d > 0);
+        const w = Math.min(50, Math.abs(d) / 0.6 * 50);
+        bar.style.width = w + '%';
+        bar.style.background = d > 0 ? 'var(--red)' : 'var(--green)';
+        if (d > 0) { bar.style.left = '50%'; bar.style.right = 'auto'; } else { bar.style.right = '50%'; bar.style.left = 'auto'; }
+      };
+      setInterval(() => {
+        t += 1;
+        d += (Math.sin(t / 7) * 0.012) + (Math.random() - 0.52) * 0.01;
+        d = Math.max(-0.6, Math.min(0.35, d));
+        paint();
+        if (t % 40 === 0) {
+          const s = sectors[sec];
+          const v = (Math.random() - 0.6) * 0.12;
+          s.textContent = (v < 0 ? '−' : '+') + Math.abs(v).toFixed(2).replace(/^0/, '');
+          s.className = v > 0 ? 'l' : '';
+          sec = (sec + 1) % sectors.length;
+          sectors[sec].textContent = '—'; sectors[sec].className = 'n';
+        }
+      }, 120);
     })();
   </script>
 </body>

@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WORKS - りゅー / うゆりのつくったアプリ</title>
+  <meta name="description" content="りゅー / うゆりがつくったアプリとゲームのまとめ。ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲームまで。ぜんぶブラウザで遊べます。">
+  <meta name="theme-color" content="#0a1628">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="WORKS - りゅー / うゆりのつくったアプリ">
+  <meta property="og:description" content="つくったアプリ、ぜんぶここ。ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲームまで。">
+  <meta property="og:url" content="https://princetottino10-bit.github.io/LINKS/">
+  <meta property="og:image" content="https://princetottino10-bit.github.io/LINKS/img/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@suke69">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+JP:wght@400;500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a1628;
+      --bg-glow: #1e4fa8;
+      --surface: rgba(255, 255, 255, 0.05);
+      --surface-hover: rgba(255, 255, 255, 0.09);
+      --line: rgba(255, 255, 255, 0.09);
+      --line-strong: rgba(255, 255, 255, 0.2);
+      --text: #f3f6fb;
+      --text-2: rgba(232, 240, 255, 0.72);
+      --text-3: rgba(232, 240, 255, 0.5);
+      --gold: #f5c518;
+      --red: #e8432a;
+      --brand: linear-gradient(90deg, var(--gold), var(--red));
+      --compile: #e91e8c;
+      --compile-cyan: #63f3ff;
+      --radius: 16px;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', 'Noto Sans JP', sans-serif;
+      background:
+        radial-gradient(900px 520px at 85% -120px, rgba(30, 79, 168, 0.55), transparent 70%),
+        radial-gradient(700px 480px at -10% 30%, rgba(37, 99, 184, 0.18), transparent 70%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* うっすらドットのグリッド */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(180deg, #000 0%, transparent 60%);
+      -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    a { color: inherit; }
+
+    :focus-visible {
+      outline: 2px solid var(--gold);
+      outline-offset: 3px;
+      border-radius: 6px;
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ===== Top bar ===== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 20px 0;
+    }
+
+    .me {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+    }
+
+    .me-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brand);
+      box-shadow: 0 0 12px rgba(245, 197, 24, 0.6);
+    }
+
+    .top-links {
+      display: flex;
+      gap: 6px;
+      list-style: none;
+    }
+
+    .top-links a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      transition: color .2s, border-color .2s, background .2s;
+    }
+
+    .top-links a:hover { color: var(--text); border-color: var(--line-strong); background: var(--surface); }
+
+    .top-links svg { width: 13px; height: 13px; fill: currentColor; }
+
+    /* ===== Hero ===== */
+    .hero {
+      padding: 48px 0 40px;
+    }
+
+    .kicker {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text-3);
+      margin-bottom: 18px;
+    }
+
+    .hero h1 {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 900;
+      font-size: clamp(36px, 8.4vw, 76px);
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+      margin-bottom: 22px;
+    }
+
+    .hero h1 .hl {
+      background: var(--brand);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .hero-lead {
+      font-size: clamp(14px, 2.2vw, 16px);
+      color: var(--text-2);
+      max-width: 560px;
+      margin-bottom: 28px;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .hero-meta li {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-2);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+    }
+
+    .hero-meta b {
+      color: var(--gold);
+      font-weight: 900;
+      margin-right: 4px;
+    }
+
+    .divider {
+      width: 60px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--brand);
+      margin: 0 0 28px;
+    }
+
+    /* ===== Featured ===== */
+    .featured {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr;
+      border-radius: 20px;
+      overflow: hidden;
+      background: #07070c;
+      border: 1px solid rgba(233, 30, 140, 0.35);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(233, 30, 140, 0.08) inset;
+      margin-bottom: 64px;
+      transition: border-color .25s, transform .25s;
+    }
+
+    .featured:hover { border-color: rgba(233, 30, 140, 0.7); }
+
+    .featured-img {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+    }
+
+    .featured-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform .6s ease;
+    }
+
+    .featured:hover .featured-img img { transform: scale(1.03); }
+
+    .featured-body {
+      padding: 24px 20px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background:
+        radial-gradient(120% 90% at 100% 0%, rgba(233, 30, 140, 0.16), transparent 60%),
+        #0c0c14;
+    }
+
+    .pickup {
+      display: inline-flex;
+      align-self: flex-start;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      color: #0a0a0f;
+      background: var(--compile-cyan);
+      padding: 4px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .featured-series {
+      font-family: 'Orbitron', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+
+    .featured-series em { font-style: normal; color: var(--compile); }
+
+    .featured h2 {
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(26px, 4.4vw, 40px);
+      letter-spacing: 1px;
+      line-height: 1.15;
+      margin-bottom: 12px;
+    }
+
+    .featured-desc {
+      color: var(--text-2);
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .featured .tags { margin-bottom: 22px; }
+
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform .15s, background .2s, border-color .2s, box-shadow .2s;
+    }
+
+    .btn:active { transform: scale(.97); }
+
+    .btn-primary {
+      background: var(--compile);
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(233, 30, 140, 0.35);
+    }
+
+    .btn-primary:hover { box-shadow: 0 8px 32px rgba(233, 30, 140, 0.55); }
+
+    .btn-ghost {
+      border: 1px solid rgba(99, 243, 255, 0.4);
+      color: var(--compile-cyan);
+    }
+
+    .btn-ghost:hover { border-color: var(--compile-cyan); background: rgba(99, 243, 255, 0.06); }
+
+    /* ===== Section ===== */
+    .section { margin-bottom: 64px; }
+
+    .section-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px 24px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-size: clamp(22px, 3.6vw, 28px);
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .section-title.compile {
+      font-family: 'Orbitron', monospace;
+      letter-spacing: 1px;
+    }
+
+    .section-title .bang { color: var(--compile); }
+
+    .section-sub {
+      color: var(--text-2);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .section-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--compile-cyan);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .section-link:hover { text-decoration: underline; text-underline-offset: 4px; }
+
+    /* ===== Cards ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      --accent: var(--gold);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform .25s ease, background .25s, border-color .25s, box-shadow .25s;
+    }
+
+    .card:hover,
+    .card:focus-within {
+      transform: translateY(-3px);
+      background: var(--surface-hover);
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .thumb {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: #05070d;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+      transition: transform .5s ease;
+    }
+
+    .card:hover .thumb img { transform: scale(1.04); }
+
+    .badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(10, 22, 40, 0.8);
+      border: 1px solid var(--line-strong);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+
+    .badge.dev { color: var(--gold); border-color: rgba(245, 197, 24, 0.5); }
+
+    .card-body {
+      flex: 1;
+      padding: 16px 18px 6px;
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .card-title a {
+      text-decoration: none;
+    }
+
+    /* カード全体をクリックできるようにする */
+    .card-title a::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    .card-title a:focus-visible { outline: none; }
+    .card:has(.card-title a:focus-visible) { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+    .card-ja {
+      font-size: 12px;
+      color: var(--text-3);
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-2);
+      margin-bottom: 12px;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+    }
+
+    .tags li {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-2);
+      padding: 2px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line);
+    }
+
+    .card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px 16px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .open {
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .open .arr { transition: transform .25s; }
+    .card:hover .open .arr { transform: translate(2px, -2px); }
+
+    .src {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--text-3);
+      text-decoration: none;
+      padding: 4px 8px;
+      margin: -4px -8px;
+      border-radius: 6px;
+      transition: color .2s, background .2s;
+    }
+
+    .src:hover { color: var(--text); background: rgba(255, 255, 255, 0.06); }
+    .src svg { width: 14px; height: 14px; fill: currentColor; }
+
+    .card-inner { display: contents; }
+
+    /* PC では上段 2 枚を大きく、残りを 3 列に */
+    @media (min-width: 1000px) {
+      .grid.lead-2 { grid-template-columns: repeat(6, 1fr); }
+      .grid.lead-2 .card { grid-column: span 2; }
+      .grid.lead-2 .card:nth-child(-n+2) { grid-column: span 3; }
+    }
+
+    /* 横長カード（オリジナル作品） */
+    .grid.wide { grid-template-columns: 1fr; }
+
+    @media (min-width: 760px) {
+      .featured { grid-template-columns: 1.35fr 1fr; }
+      .featured-img { aspect-ratio: auto; min-height: 380px; }
+      .featured-body { padding: 36px 36px 36px 32px; }
+
+      .grid.wide .card { flex-direction: row; }
+      .grid.wide .thumb { flex: 0 0 48%; aspect-ratio: 16 / 10; border-bottom: 0; border-right: 1px solid var(--line); }
+      .grid.wide .card-inner { display: flex; flex-direction: column; flex: 1; }
+      .grid.wide .card-body { padding: 26px 28px 6px; }
+      .grid.wide .card-foot { padding: 12px 28px 24px; }
+      .grid.wide .card-title { font-size: 22px; }
+      .grid.wide .card-desc { font-size: 14px; }
+    }
+
+
+    /* ===== Footer ===== */
+    .footer {
+      border-top: 1px solid var(--line);
+      padding: 36px 0 48px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .footer-name {
+      font-weight: 800;
+      font-size: 15px;
+      margin-bottom: 4px;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: var(--text-3);
+      max-width: 460px;
+    }
+
+    .footer .top-links { flex-wrap: wrap; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition: none !important; animation: none !important; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="topbar">
+      <a class="me" href="https://princetottino10-bit.github.io/link/">
+        <span class="me-dot" aria-hidden="true"></span>
+        りゅー / うゆり
+      </a>
+      <ul class="top-links">
+        <li>
+          <a href="https://x.com/suke69" target="_blank" rel="noopener noreferrer" aria-label="X（@suke69）">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span>@suke69</span>
+          </a>
+        </li>
+        <li><a href="https://princetottino10-bit.github.io/link/">リンク集</a></li>
+      </ul>
+    </header>
+
+    <section class="hero">
+      <p class="kicker">WORKS</p>
+      <h1>つくったアプリ、<br><span class="hl">ぜんぶ</span>ここ。</h1>
+      <p class="hero-lead">
+        ボードゲーム『コンパイル』のおともツールから、オリジナルのカードゲームまで。インストール不要、ぜんぶブラウザでそのまま遊べます。
+      </p>
+      <ul class="hero-meta">
+        <li><b id="app-count">-</b>APPS</li>
+        <li>無料</li>
+        <li>スマホ対応</li>
+      </ul>
+    </section>
+
+    <div class="divider" aria-hidden="true"></div>
+
+    <!-- PICK UP：JS で APPS の featured から描画 -->
+    <div id="featured"></div>
+
+    <section class="section" id="compile">
+      <div class="section-head">
+        <div>
+          <p class="section-label">BOARD GAME TOOLS</p>
+          <h2 class="section-title compile">COMPILE <span class="bang">&lt;!&gt;</span></h2>
+          <p class="section-sub">ボードゲーム『コンパイル』のおともツール（ファンメイド・非公式）</p>
+        </div>
+        <a class="section-link" href="https://princetottino10-bit.github.io/compile/" target="_blank" rel="noopener noreferrer">ポータルをひらく <span aria-hidden="true">↗</span></a>
+      </div>
+      <div class="grid lead-2" data-group="compile"></div>
+    </section>
+
+    <section class="section" id="original">
+      <div class="section-head">
+        <div>
+          <p class="section-label">ORIGINAL GAMES</p>
+          <h2 class="section-title">オリジナルゲーム</h2>
+          <p class="section-sub">イチから考えてつくっているゲーム</p>
+        </div>
+      </div>
+      <div class="grid wide" data-group="original"></div>
+    </section>
+
+    <footer class="footer">
+      <div>
+        <p class="footer-name">りゅー / うゆり</p>
+        <p class="footer-note">
+          COMPILE 関連のツールは、ボードゲーム『コンパイル』のファンがつくった非公式アプリです。不具合や要望は X の DM までどうぞ！
+        </p>
+      </div>
+      <ul class="top-links">
+        <li><a href="https://princetottino10-bit.github.io/link/">リンク集</a></li>
+        <li><a href="https://x.com/suke69" target="_blank" rel="noopener noreferrer">X</a></li>
+        <li><a href="https://github.com/princetottino10-bit" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+      </ul>
+    </footer>
+  </div>
+
+  <script>
+    /*
+     * アプリ一覧
+     * 新しいアプリを追加するときは、この配列に 1 つ足すだけで OK。
+     *   group    : 'compile'（COMPILE ツール） / 'original'（オリジナルゲーム）
+     *   featured : true にすると一番上の PICK UP に大きく表示
+     *   status   : 'dev' にすると「開発中」バッジがつく
+     *   repo     : ソースコードの GitHub（なければ省略）
+     */
+    const APPS = [
+      {
+        group: 'compile',
+        featured: true,
+        title: '3D ARENA',
+        ja: '3D アリーナ',
+        desc: 'ボードゲーム『コンパイル』をブラウザで遊べる 3D 対戦。CPU 対戦・オンライン対戦・トレーニングに、5 分で覚えられるチュートリアルつき。',
+        tags: ['CPU 対戦', 'オンライン対戦', 'トレーニング', 'チュートリアル'],
+        url: 'https://princetottino10-bit.github.io/compile/three-play.html',
+        tutorial: 'https://princetottino10-bit.github.io/compile/three-play.html?tutorial=1',
+        img: 'img/arena-lg.webp',
+        repo: 'https://github.com/princetottino10-bit/compile',
+      },
+      {
+        group: 'compile',
+        title: 'CARD LIST',
+        ja: 'カードリスト',
+        desc: '全プロトコルのカードを一覧で。効果からの逆引き検索や、デッキ分析もできます。',
+        tags: ['カード一覧', '逆引き検索', 'デッキ分析'],
+        url: 'https://princetottino10-bit.github.io/compile/cardlist.html',
+        img: 'img/cardlist.webp',
+        repo: 'https://github.com/princetottino10-bit/compile',
+      },
+      {
+        group: 'compile',
+        title: 'BATTLE STATS',
+        ja: '戦績集計',
+        desc: '対戦結果を記録して、プロトコル別の勝率・相性表・シナジーをシーズンごとに集計。Google ログインでクラウド保存も。',
+        tags: ['勝率', '相性表', 'シーズン別'],
+        url: 'https://compile-battle-stats.vercel.app/',
+        img: 'img/stats.webp',
+      },
+      {
+        group: 'compile',
+        title: 'CONTROL TRACKER',
+        ja: 'コントロール権管理',
+        desc: 'テーブルに置いて 2 人で使う、コントロールマーカー管理アプリ。',
+        tags: ['対面プレイ', '2 人用'],
+        url: 'https://princetottino10-bit.github.io/compile/control-tracker.html',
+        img: 'img/control.webp',
+        repo: 'https://github.com/princetottino10-bit/compile',
+      },
+      {
+        group: 'compile',
+        title: 'Compile Picker',
+        ja: 'プロトコル ランダマイザ',
+        desc: '使うプロトコルをランダムに決めるピッカー。レシオの上限・下限を指定した抽選にも対応。',
+        tags: ['ランダマイザ', 'レシオ対応'],
+        url: 'https://princetottino10-bit.github.io/compile-picker/compile_protocol_picker.html',
+        img: 'img/picker.webp',
+        repo: 'https://github.com/princetottino10-bit/compile-picker',
+      },
+      {
+        group: 'compile',
+        title: 'COMPILE 勝率集計',
+        ja: 'シンプル版 勝率集計',
+        desc: '先攻・後攻のプロトコルと勝者を入れるだけの、シンプルな勝率集計ツール。データの読み込み・書き出しつき。',
+        tags: ['勝率', 'シンプル'],
+        url: 'https://princetottino10-bit.github.io/compile-wr/',
+        img: 'img/winrate.webp',
+        repo: 'https://github.com/princetottino10-bit/compile-wr',
+      },
+      {
+        group: 'original',
+        status: 'dev',
+        title: '異能学園総選挙',
+        ja: 'いのうがくえんそうせんきょ',
+        desc: '異能を持つ高校生たちが「票」を奪い合う、2 人用の対戦カードゲーム。ブラウザでテストプレイできます。',
+        tags: ['オリジナル', '2 人対戦', 'カードゲーム'],
+        url: 'https://princetottino10-bit.github.io/eoj-reboot/',
+        img: 'img/inou.webp',
+        repo: 'https://github.com/princetottino10-bit/eoj-reboot',
+      },
+    ];
+
+    const ACCENT = { compile: '#e91e8c', original: '#f5c518' };
+    const GITHUB_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.19 1.76 1.19 1.03 1.76 2.69 1.25 3.35.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.68 0-1.25.45-2.28 1.19-3.08-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.23 2.75.11 3.04.74.8 1.19 1.83 1.19 3.08 0 4.41-2.69 5.38-5.25 5.67.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>';
+
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const ext = 'target="_blank" rel="noopener noreferrer"';
+    const tagList = (tags) => `<ul class="tags">${tags.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
+
+    function card(app) {
+      const badge = app.status === 'dev' ? '<span class="badge dev">開発中</span>' : '';
+      const src = app.repo
+        ? `<a class="src" href="${esc(app.repo)}" ${ext} aria-label="${esc(app.title)} のソースコード（GitHub）">${GITHUB_ICON}<span>GitHub</span></a>`
+        : '';
+      return `
+        <article class="card" style="--accent:${ACCENT[app.group] || 'var(--gold)'}">
+          <div class="thumb">
+            <img src="${esc(app.img)}" alt="${esc(app.title)} の画面" width="800" height="500" loading="lazy" decoding="async">
+            ${badge}
+          </div>
+          <div class="card-inner">
+            <div class="card-body">
+              <h3 class="card-title"><a href="${esc(app.url)}" ${ext}>${esc(app.title)}</a></h3>
+              <p class="card-ja">${esc(app.ja)}</p>
+              <p class="card-desc">${esc(app.desc)}</p>
+              ${tagList(app.tags)}
+            </div>
+            <div class="card-foot">
+              <span class="open" aria-hidden="true">ひらく <span class="arr">↗</span></span>
+              ${src}
+            </div>
+          </div>
+        </article>`;
+    }
+
+    function featured(app) {
+      const tutorial = app.tutorial
+        ? `<a class="btn btn-ghost" href="${esc(app.tutorial)}" ${ext}>チュートリアル（5 分）</a>`
+        : '';
+      return `
+        <article class="featured">
+          <div class="featured-img">
+            <img src="${esc(app.img)}" alt="${esc(app.title)} のタイトル画面" width="1280" height="800" decoding="async">
+          </div>
+          <div class="featured-body">
+            <span class="pickup">PICK UP</span>
+            <p class="featured-series">COMPILE <em>&lt;!&gt;</em></p>
+            <h2>${esc(app.title)}</h2>
+            <p class="featured-desc">${esc(app.desc)}</p>
+            ${tagList(app.tags)}
+            <div class="btns">
+              <a class="btn btn-primary" href="${esc(app.url)}" ${ext}>あそぶ <span aria-hidden="true">→</span></a>
+              ${tutorial}
+            </div>
+          </div>
+        </article>`;
+    }
+
+    const pick = APPS.find((a) => a.featured);
+    if (pick) document.getElementById('featured').innerHTML = featured(pick);
+
+    document.querySelectorAll('.grid[data-group]').forEach((grid) => {
+      grid.innerHTML = APPS
+        .filter((a) => a.group === grid.dataset.group && !a.featured)
+        .map(card)
+        .join('');
+    });
+
+    document.getElementById('app-count').textContent = APPS.length;
+  </script>
+</body>
+</html>

@@ -320,6 +320,36 @@
   .log li.good { color: var(--lav); border-left-color: var(--you-2); }
   .log li.bad { color: var(--foe); border-left-color: var(--foe); }
 
+
+  /* 友達と対戦 */
+  .vs-err { color: var(--foe); font-weight: 700; font-size: .86rem; }
+  .codeline { flex-wrap: nowrap; }
+  .codein { flex: 1; min-width: 0; min-height: 44px; padding: 8px 12px; font: 800 1.1rem var(--font-ui); letter-spacing: .2em; color: var(--ink); background: var(--panel-2); border: 1px solid var(--edge); border-radius: 0; clip-path: var(--cut-s); }
+  .codein::placeholder { letter-spacing: 0; font: 400 .85rem var(--font-jp); color: var(--dim); }
+  .roomcode { font-family: var(--font-logo); font-weight: 900; font-size: 2.4rem; letter-spacing: .3em; text-align: center; color: var(--prize); }
+  .seg.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vsgame { display: flex; flex-direction: column; gap: 10px; }
+  .vsboard { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 6px; }
+  .vsboard > div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; background: var(--panel); border: 1px solid var(--edge); clip-path: var(--cut-s); font-size: .78rem; text-align: center; }
+  .vsboard .face { width: 44px; height: 44px; }
+  .vsboard em { font-style: normal; font-family: var(--font-ui); font-weight: 800; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .vsboard i { font-style: normal; font-size: .72rem; font-weight: 700; color: var(--lav); min-height: 1.2em; }
+  .vsboard i.dim { color: var(--dim); font-weight: 400; }
+  .vsboard i.ok { color: var(--prize); }
+  .vsboard i.ng { color: var(--foe); }
+  .vsboard .you { border-color: var(--you-2); background: rgba(139, 92, 246, .22); }
+  .vsboard .by { box-shadow: inset 0 2px 0 var(--prize); }
+  ol.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column-reverse; gap: 6px; }
+  ol.rank li { display: grid; grid-template-columns: auto auto 1fr auto; grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 8px 12px; background: var(--panel); border: 1px solid var(--edge); clip-path: var(--cut-s); animation: rankin .45s both; animation-delay: calc(var(--k) * .7s); }
+  ol.rank li .rk { grid-row: span 2; font-family: var(--font-ui); font-weight: 800; }
+  ol.rank li .face { grid-row: span 2; width: 44px; height: 44px; }
+  ol.rank li .muted { grid-column: 3; font-size: .78rem; }
+  ol.rank li em { grid-row: 1 / span 2; grid-column: 4; font-style: normal; font-family: var(--font-ui); font-weight: 800; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+  ol.rank li.you { border-color: var(--you-2); }
+  ol.rank li.top em, ol.rank li.top .rk { color: var(--prize); }
+  @keyframes rankin { from { opacity: 0; transform: translateY(8px); } }
+  [data-calm] ol.rank li { animation: none; }
+
   /* 押せない理由の札：時間で消さず、ほかに触れたら引っ込める */
   #why { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(max(16px, env(safe-area-inset-bottom)) + 8px); z-index: 60;
     max-width: min(420px, calc(100vw - 32px)); padding: 9px 14px; background: rgba(40, 12, 28, .96); border: 1px solid var(--foe);
@@ -1496,18 +1526,22 @@ const AUTO = /auto/.test(location.hash);
 let G = null;
 let pending = [];
 const take = type => { const i = pending.findIndex(p => p.type === type); if (i < 0) return null; return pending.splice(i, 1)[0]; };
+// 協力：人が動かす仲間の操作は peer 付きで来る。あなた（主）の操作は peer なし
+const takeBy = (type, m) => { const i = pending.findIndex(p => p.type === type && (m.peer ? p.peer === m.peer : !p.peer)); return i < 0 ? null : pending.splice(i, 1)[0]; };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 let ticks = 0;
 async function step() {
   if (G.ph) G.ph.t += STEP;
   render();
+  if (CO.on && CO.host) coopSync();
   if (!AUTO) await sleep(STEP);
   else if (++ticks % 200 === 0) await sleep(0);
 }
 async function pause(ms) { for (let t = 0; t < ms; t += STEP) await step(); }
-function setPhase(key, label, dur) { G.ph = { key, label, dur, t: 0 }; }
-const player = () => G.party[0];
-const cpuControlled = m => !m.player || AUTO;
+function setPhase(key, label, dur) { G.ph = { key, label, dur, t: 0 }; G.phn = (G.phn || 0) + 1; }
+const player = () => G.party.find(m => m.player) || G.party[0];
+// 友達が席に入った仲間（m.peer）は CPU が動かさない
+const cpuControlled = m => AUTO || (!m.player && !m.peer);
 function say(m, text, cls = '') { G.bub[m.id] = { text, cls }; }
 function caption(text, cls = '') { G.cap = { text, cls }; }
 function logEv(text, cls = '') { G.log.push({ text, cls }); if (G.log.length > 40) G.log.shift(); }
@@ -1604,6 +1638,7 @@ const KICK = { '撃破': 'BREAK', '踏破': 'DUNGEON CLEAR', '全滅': 'GAME OVE
 const kickOf = (text, sub) => KICK[text] || (/ボス戦/.test(sub) ? 'BOSS BATTLE' : /体目/.test(sub) ? 'ENCOUNTER'
   : /の出番$/.test(text) ? (G && text.replace(/の出番$/, '').split('・').includes(player().name) ? 'YOUR TURN' : 'ALLY TURN') : '');
 function banner(text, sub = '', cls = '') {
+  if (CO.on && CO.host && G) G.fx = [(G.fx?.[0] || 0) + 1, text, sub, cls];
   if (calm()) return;
   for (const old of fxLayer.querySelectorAll('.banner')) old.remove();
   const el = document.createElement('div');
@@ -1683,7 +1718,8 @@ function render() {
     if (st) st.classList.toggle('flash', !!G.hitFlash);
     return;
   }
-  const html = !G ? (statsUI.open ? statsView() : titleView()) : G.screen === 'reward' ? rewardView() : endView();
+  const html = VS.view === 'lobby' ? vsLobbyView() : VS.view === 'game' && VS.st ? vsGameView()
+    : !G ? (statsUI.open ? statsView() : titleView()) : G.screen === 'reward' ? rewardView() : endView();
   if (html !== lastHtml) {
     const sameScreen = lastHtml && html.slice(0, 120) === lastHtml.slice(0, 120);
     app.innerHTML = html; lastHtml = html; app.classList.remove('battle');
@@ -1703,6 +1739,7 @@ function titleView() {
     <p class="muted" style="font-size:.85rem">${me.name}をあなたが動かし、残りの3人が仲間になります。${me.name}は${mine.map(g => GENRES[g]).join('と')}の「担当」です。担当の問題は、担当が少し先に押せます。</p>
   </div>
   <div class="cta"><button class="big go" data-act="start">潜る</button></div>
+  ${vsCard()}
   <ul class="rules">
     <li>1問ごとに「作戦」→「問題」→「結果」。作戦では予告の列の札を動かし、問題では問いが出たら押します。</li>
     <li>ほかの仕組み（引き直し・保険・コンボ・弱点・大技・技）は、戦闘が進むと1つずつ出てきます。出てきたときに説明します。</li>
@@ -1778,7 +1815,7 @@ function battleView() {
     const mine = q && owners(q.g).includes(m);
     return `<div class="mem ${m.player ? 'you' : ''} ${G.active === m ? 'act' : ''} ${mine ? 'own' : ''}">
       <span class="nm">${face(m)}${m.name}</span>
-      <span class="lv ${q && lv === topLv ? 'top' : ''}">${q ? `Lv${lv}${mine ? ' 担当' : ''}` : (m.player ? 'あなた' : m.persona)}</span>
+      <span class="lv ${q && lv === topLv ? 'top' : ''}">${q ? `Lv${lv}${mine ? ' 担当' : ''}` : (m.player ? 'あなた' : CO.on && (m.peer || m.fav) ? '友達' : m.persona)}</span>
       <span class="bub ${b ? b.cls : ''}">${b ? esc(b.text) : ''}</span>
     </div>`;
   }).join('');
@@ -1857,7 +1894,7 @@ function controls() {
   if (c === 'wait') {
     // 同じ場所・同じ大きさで、押せるようになるまで中が満ちていく
     const mine = owners(G.q.g).includes(player());
-    return `<button class="big buzz wait" data-act="buzz" aria-disabled="true" style="--open:${Math.round((G.open || 0) * 100)}%"><span class="kick">${mine ? 'YOUR TURN' : 'READY'}</span>${mine ? 'あなたの出番' : owners(G.q.g).length ? esc(G.lockText || '') : '問いを待つ'}<small>問いが出たら押せる${owners(G.q.g).length && !mine ? '（担当が少し先）' : ''}</small></button>`;
+    return `<button class="big buzz wait" data-act="buzz" aria-disabled="true" style="--open:${Math.round((G.open || 0) * 100)}%"><span class="kick">${mine ? 'YOUR TURN' : 'READY'}</span>${mine ? 'あなたの出番' : owners(G.q.g).length ? esc(G.lockText || '') : '問いを待つ'}<small>問いが出たら押せる${owners(G.q.g).length && !mine && !CO.on ? '（担当が少し先）' : ''}</small></button>`;
   }
   if (c === 'buzz') return `<button class="big buzz" data-act="buzz"><span class="kick">BUZZ</span>押す！</button>`;
   if (c === 'insure') return `<button class="big insure" data-act="buzz">保険に入る<small>前の人が外したら、あなたが答える</small></button>`;
@@ -1918,7 +1955,8 @@ function endView() {
   </tbody></table></div></div>
   <div class="card"><h2><span class="kick">DECK</span>最後の出題表（${G.table.length}枚）</h2>${deckView()}</div>
   ${G.highlights.length ? `<div class="card"><h2><span class="kick">HIGHLIGHTS</span>名場面</h2><ul class="rules">${G.highlights.slice(-6).map(h => `<li>${esc(h)}</li>`).join('')}</ul></div>` : ''}
-  <div class="cta"><button class="big go" data-act="again">もう一度潜る</button></div>`;
+  ${CO.on && !CO.host ? '<p class="muted" style="text-align:center">部屋を作った人が「部屋に戻る」を押すと、部屋に戻ります。</p>'
+    : `<div class="cta"><button class="big go" data-act="again">${CO.on ? '部屋に戻る' : 'もう一度潜る'}</button></div>`}`;
 }
 
 // 場の指さし：長い段落はやめて一言。新しい仕組みは、それが開いた戦闘の最初の作戦で一言ずつ
@@ -1930,16 +1968,18 @@ function guide() {
   const k = G.bplans;
   const news = G.bi === 0 && k === 1 ? '上の札が、敵がこれから出す問題。左から順に場に出ます。'
     : G.bi === 0 && k === 2 ? `札をタップ→別の札をタップで入れ替え（気力${COST.swap}）。問いが出てすぐ押して正解すると早押し1.5倍。`
-    : G.bi === 1 && k === 1 ? `新しく：札をタップで「引き直す」（気力${COST.redraw}）。誰かが押した後は「保険」。同じジャンルの連続正解は「コンボ」で、光る札がそれ。`
+    : G.bi === 1 && k === 1 ? `新しく：札をタップで「引き直す」（気力${COST.redraw}）。${CO.on ? '' : '誰かが押した後は「保険」。'}同じジャンルの連続正解は「コンボ」で、光る札がそれ。`
     : G.bi === 2 && k === 1 ? '新しく：★は敵の弱点で1.5倍。赤い点線の🔒は大技で、動かせず被弾2倍。'
     : G.bi === 3 && k === 1 ? 'ボスの札はすべて🔒。動かせるのは出題表から来た札だけ。' : '';
   return `<div class="guide">${news ? `<p class="new">${esc(news)}</p>` : ''}<p>${esc(now)}</p></div>`;
 }
 
 // ===== 操作 =====
-let lastFast = 0;
+let lastFast = -1e9;
 function onAct(b) {
   const act = b.dataset.act, v = b.dataset.v;
+  if (act.startsWith('vs')) { vsAct(act, v); return; }
+  if (CO.on && !CO.host) { coopGuestAct(act, v); return; }
   if (act === 'me') { setup.me = v; render(); return; }
   if (act === 'motion') { motionPref = v; try { localStorage.setItem(MOTION_KEY, v); } catch {} lastHtml = ''; render(); return; }
   if (act === 'start') { startRun(); return; }
@@ -1947,7 +1987,7 @@ function onAct(b) {
   if (act === 'statsg') { statsUI.g = v; render(); return; }
   if (act === 'statscsv' || act === 'statsjson') { exportStats(act === 'statscsv' ? 'csv' : 'json'); return; }
   if (act === 'statsclear') { if (confirm('正答率の記録をすべて消します。よろしいですか？')) { qstats = {}; saveStats(); render(); } return; }
-  if (act === 'again') { G = null; lastHtml = ''; render(); return; }
+  if (act === 'again') { G = null; lastHtml = ''; if (CO.on) coopBackToRoom(); render(); return; }
   if (act === 'sel') {
     if (G) G.queueAnim = false;
     if (!G || G.qphase !== 'plan') return;
@@ -1976,14 +2016,14 @@ document.addEventListener('pointerdown', e => { if (!e.target.closest('.off')) w
 app.addEventListener('pointerdown', e => {
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled || b.classList.contains('off')) return;
-  if (['buzz', 'char'].includes(b.dataset.act)) { e.preventDefault(); lastFast = performance.now(); onAct(b); }
+  if (['buzz', 'char', 'vschar'].includes(b.dataset.act)) { e.preventDefault(); lastFast = performance.now(); onAct(b); }
 });
 app.addEventListener('click', e => {
   const off = e.target.closest('.off');
   if (off) { showWhy(off.dataset.why); return; }
   const b = e.target.closest('[data-act]');
   if (!b || b.disabled) return;
-  if (['buzz', 'char'].includes(b.dataset.act) && e.detail !== 0) return;
+  if (['buzz', 'char', 'vschar'].includes(b.dataset.act) && e.detail !== 0) return;
   if (performance.now() - lastFast < 450) return;
   onAct(b);
 });
@@ -2001,11 +2041,11 @@ function panelPick(ch) {
 }
 const HIRA = ['ー', ...'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんがぎぐげござじずぜぞだぢづでどばびぶべぼぱぴぷぺぽゃゅょっ'];
 const VARIANTS = ['かが', 'きぎ', 'くぐ', 'けげ', 'こご', 'さざ', 'しじ', 'すず', 'せぜ', 'そぞ', 'ただ', 'ちぢ', 'つづっ', 'てで', 'とど', 'はばぱ', 'ひびぴ', 'ふぶぷ', 'へべぺ', 'ほぼぽ', 'やゃ', 'ゆゅ', 'よょ', 'あぁ', 'いぃ', 'うぅゔ', 'えぇ', 'おぉ'];
-function panelCands(p) {
+function panelCands(p, q = G.q) {
   const i = p.input.length;
   const right = [...new Set(p.targets.map(t => t[i]))];
   const out = new Set(right.slice(0, 3));
-  for (const w of shuffle(G.q.wrong || [])) { const c = [...w][i]; if (c && out.size < 4) out.add(c); }
+  for (const w of shuffle(q.wrong || [])) { const c = [...w][i]; if (c && out.size < 4) out.add(c); }
   const v = VARIANTS.find(s => s.includes(right[0]));
   if (v && out.size < 4) out.add(pick([...v].filter(x => x !== right[0])));
   while (out.size < 4) out.add(pick(HIRA));
@@ -2028,6 +2068,7 @@ function startRun() {
     highlights: [], log: [], plans: 0, bplans: 0,
     stat: { q: 0, ok: 0, owned: 0, ownerOk: 0, quick: 0, insured: 0, swap: 0, redraw: 0, skill: 0, combo: 0 },
   };
+  if (CO.on && CO.host) coopSeat();
   pending = [];
   runGame().catch(err => { console.error(err); caption('エラー：' + err.message, 'bad'); render(); window.__ERROR = err.message; });
 }
@@ -2035,7 +2076,8 @@ function startRun() {
 async function runGame() {
   for (G.bi = 0; G.bi < ENEMIES.length; G.bi++) {
     const d = ENEMIES[G.bi];
-    G.enemy = { ...d, maxHp: d.hp, pile: [] };
+    const hp0 = CO.on ? Math.round(d.hp * COOP_HP_MUL) : d.hp;
+    G.enemy = { ...d, hp: hp0, maxHp: hp0, pile: [] };
     G.enemy.pile = enemyDeck(G.enemy);
     G.tablePile = shuffle(G.table.map(c => ({ ...c, id: ++cardSeq, src: 'table' })));
     G.queue = []; G.hold = null; G.keptThisBattle = false; G.combo = { g: null, n: 0 }; G.ki = KI_MAX; G.bplans = 0;
@@ -2044,7 +2086,7 @@ async function runGame() {
     caption(`${d.name}が現れた`);
     render(); banner(d.name, d.boss ? 'ボス戦' : `${G.bi + 1}体目が現れた`, d.boss ? 'red' : 'neon');
     logEv(`■ ${d.name}が現れた。体力${d.hp}、出してくるジャンルは${d.gs.length > 5 ? '全部' : d.gs.map(g => GENRES[g]).join('・')}。気力が${KI_MAX}に戻った`);
-    const fresh = NEWS[G.bi];
+    const fresh = CO.on ? NEWS[G.bi]?.replace('・保険', '') : NEWS[G.bi];
     if (fresh) logEv(`★ この戦闘から：${fresh}`);
     while (G.enemy.hp > 0 && G.hp > 0) await playQuestion();
     if (G.enemy.hp <= 0) { banner('撃破', d.name, 'good'); await pause(1000); }
@@ -2054,6 +2096,7 @@ async function runGame() {
   G.clear = G.hp > 0;
   banner(G.clear ? '踏破' : '全滅', '', G.clear ? 'good' : 'red');
   G.screen = 'end'; G.ctrl = null; render();
+  if (CO.on && CO.host) coopSync(true);
   window.__RESULT = { clear: G.clear, bi: G.bi, hp: G.hp, stat: G.stat, table: G.table.length };
 }
 
@@ -2083,13 +2126,19 @@ async function plan() {
     const p = pending.shift();
     if (p) {
       if (p.type === 'go') break;
-      doOp(p.type, p.v);
+      if (p.peer) {
+        // 友達の操作：選んだ札の番号も一緒に来る
+        const actor = G.party.find(m => m.peer === p.peer);
+        if (!actor || !['swap', 'redraw', 'skill'].includes(p.type)) continue;
+        G.sel = (Array.isArray(p.sel) ? p.sel : []).filter(i => Number.isInteger(i) && i >= 0 && i < G.queue.length).slice(0, 2);
+        doOp(p.type, p.v, actor);
+      } else doOp(p.type, p.v);
     }
     await step();
   }
   G.sel = [];
 }
-function doOp(type, v) {
+function doOp(type, v, actor = player()) {
   G.queueAnim = false;
   const s = G.sel.map(i => G.queue[i]);
   const pay = n => { if (G.ki < n) return false; G.ki -= n; return true; };
@@ -2105,8 +2154,8 @@ function doOp(type, v) {
     if (!sk || G.ki < sk.cost) return;
     let done = false;
     const c = s[0];
-    if (v === 'convert' && s.length === 1 && !locked(c) && !player().fav.includes(c.g)) {
-      const to = player().fav[0];
+    if (v === 'convert' && s.length === 1 && !locked(c) && !actor.fav.includes(c.g)) {
+      const to = actor.fav[0];
       c.g = to; done = true; caption(`札を${GENRES[to]}に書き換えた`);
     }
     if (v === 'level' && s.length === 1 && !locked(c)) {
@@ -2148,7 +2197,7 @@ async function playQuestion() {
   G.qrate = shared[q.id]?.[0] ? { who: 'みんな', t: shared[q.id][0], o: shared[q.id][1] }
     : qstats[q.id]?.[1] ? { who: 'あなた', t: qstats[q.id][1], o: qstats[q.id][2] } : null;
   noteStat(q.id, 0);
-  G.q = q; G.card = card; G.shown = 0; G.bub = {}; G.active = null; G.showAns = false; G.ctrl = 'watch';
+  G.q = q; G.card = card; G.shown = 0; G.bub = {}; G.active = null; G.showAns = false; G.ctrl = 'watch'; G.chain = []; G.cans = null;
   pending = [];
   const own = owners(q.g);
   const qs = { first: null, by: null, ok: false };
@@ -2156,16 +2205,16 @@ async function playQuestion() {
   for (const m of G.party) m.k = rollKnowledge(m, q);
   G.qphase = 'preview';
   setPhase('preview', `${GENRES[q.g]}・${q.m ? 'マニアック' : 'ふつう'}`, PREVIEW_MS);
-  for (const m of own) say(m, m.player ? 'あなたの出番！' : pick(['ここは任せろ！', '出番だな', '待ってました']));
+  for (const m of own) say(m, m.player ? 'あなたの出番！' : m.peer ? '出番！' : pick(['ここは任せろ！', '出番だな', '待ってました']));
   render();
   if (own.length) banner(`${own.map(m => m.name).join('・')}の出番`, `${GENRES[q.g]}${q.m ? '・マニアック' : ''}`, 'neon');
   else banner('フリー問題', `${GENRES[q.g]}${q.m ? '・マニアック' : ''}　担当なし`, '');
-  caption(own.length ? `${own.map(m => m.name).join('・')}の出番！` : 'フリー問題：誰でも押せる', own.length ? 'good' : '');
-  logEv(`▶ 第${G.stat.q + 1}問：「いま」の札（${GENRES[card.g]}・${card.m ? 'マニアック' : 'ふつう'}${card.big ? '・大技' : ''}）が出題。${own.length ? `担当の${own.map(m => m.name).join('・')}が問いの直後に先に押せる` : '担当なし、誰でも押せる'}`);
+  caption(own.length ? `${own.map(m => m.name).join('・')}の出番！${CO.on ? '　全員で答える' : ''}` : CO.on ? '全員で答える' : 'フリー問題：誰でも押せる', own.length ? 'good' : '');
+  logEv(`▶ 第${G.stat.q + 1}問：「いま」の札（${GENRES[card.g]}・${card.m ? 'マニアック' : 'ふつう'}${card.big ? '・大技' : ''}）が出題。${CO.on ? '問いが出たら全員が押して答える' : own.length ? `担当の${own.map(m => m.name).join('・')}が問いの直後に先に押せる` : '担当なし、誰でも押せる'}`);
   G.watchText = card.big ? `大技：外すと全員に${cardAtk(card)}ダメージ` : `外すと全員に${cardAtk(card)}ダメージ`;
   await pause(PREVIEW_MS);
 
-  await flow(q, own);
+  await (CO.on ? flowCoop : flow)(q, own);
   saveStats();
 
   G.showAns = true; G.shown = [...q.text].length; G.ctrl = null; G.active = null;
@@ -2228,24 +2277,37 @@ function miss(m) {
   logEv(`× ${m.name}が誤答（お手つきで共有体力 -${MISS_COST}）`, 'bad');
 }
 
+// 協力で友達が席にいるときは、通信の遅れの分（NET_LAG_MS）だけ決めるのを待つ。
+// 友達は自分の画面で押した時刻（問題文が出始めてから何ms か）を送ってくるので、届くのが遅れても押した順で決まる
+const NET_LAG_MS = 300;
 async function reveal(label, openMs) {
   const q = G.q, len = [...q.text].length, total = len * CHAR_MS + GRACE_MS;
   G.qphase = 'reveal';
   setPhase('reveal', label, total);
   const you = player();
+  const lag = CO.on && G.party.some(m => m.peer) ? NET_LAG_MS : 0;
+  const at = m => openMs(m) + m.k.react;
+  const cands = [];
+  const res = c => ({ m: c.m, frac: G.shown / len, quick: c.at - openMs(c.m) <= QUICK_MS });
   for (let t = 0; t < total; t += STEP) {
     G.shown = Math.min(len, Math.floor(t / CHAR_MS) + 1);
-    const res = (m) => ({ m, frac: G.shown / len, quick: t - openMs(m) <= QUICK_MS });
     // あなたのボタン：開くまでは中が満ちていく（G.open は 0〜1）
     if (!AUTO) { G.open = clamp(t / openMs(you), 0, 1); G.ctrl = t >= openMs(you) ? 'buzz' : 'wait'; }
-    if (!AUTO && t >= openMs(you) && take('buzz')) return res(you);
-    if (!AUTO && t < openMs(you)) take('buzz');  // 開く前の押しは捨てる（ためておかない）
-    const at = m => openMs(m) + m.k.react;
-    const cpu = G.party.filter(m => cpuControlled(m) && m.k.react != null && t >= at(m)).sort((a, b) => at(a) - at(b))[0];
-    if (cpu) return res(cpu);
+    if (!AUTO && t >= openMs(you) && takeBy('buzz', you)) cands.push({ m: you, at: t });
+    if (!AUTO && t < openMs(you)) takeBy('buzz', you);  // 開く前の押しは捨てる（ためておかない）
+    for (const m of G.party) if (m.peer) {
+      const p = takeBy('buzz', m);
+      if (!p || cands.some(c => c.m === m)) continue;
+      const claim = Number.isFinite(+p.at) ? +p.at : t;
+      if (claim < openMs(m) - STEP) continue; // 開く前の押し
+      cands.push({ m, at: clamp(claim, openMs(m), t) });
+    }
+    for (const m of G.party) if (cpuControlled(m) && m.k.react != null && t >= at(m) && !cands.some(c => c.m === m)) cands.push({ m, at: at(m) });
+    const best = cands.sort((a, b) => a.at - b.at)[0];
+    if (best && t >= best.at + lag) return res(best);
     await step();
   }
-  return null;
+  return cands.length ? res(cands.sort((a, b) => a.at - b.at)[0]) : null;
 }
 async function answer(m) {
   const q = G.q, a = [...q.a];
@@ -2260,6 +2322,17 @@ async function answer(m) {
     const ok = G.panel.done && G.panel.ok;
     G.panel = null; G.ctrl = 'watch'; G.watchText = '';
     return ok;
+  }
+  if (m.peer && !AUTO) {
+    // 友達が答える：入力は友達の画面で行い、出来上がった答えだけが届く。途中で抜けたら CPU が代わりに答える
+    G.ctrl = 'watch'; G.watchText = `${m.name}が文字パネルで入力しています`;
+    say(m, '回答中');
+    for (let t = 0; t < G.ph.dur && m.peer; t += STEP) {
+      const p = takeBy('ansdone', m);
+      if (p) { G.watchText = ''; return [q.a, ...(q.alt || [])].includes(String(p.s || '').slice(0, 40)); }
+      await step();
+    }
+    if (m.peer) { G.watchText = ''; return false; }
   }
   G.ctrl = 'watch'; G.watchText = `${m.name}が文字パネルで入力しています`;
   const ok = m.k.knows ? rnd() < 0.95 : rnd() < 0.08;
@@ -2276,7 +2349,9 @@ async function flow(q, own) {
   const qs = G.qs;
   const base = q.ask * CHAR_MS;
   let openMs = () => base, label = '早押し：問いが出たら誰でも押せる';
-  if (own.length) {
+  // 協力では担当でも担当でなくても全員同時。担当は得意の印だけ
+  if (CO.on) label = own.length ? `${own.map(m => m.name).join('・')}の得意。押すのは全員同時` : label;
+  else if (own.length) {
     openMs = m => own.includes(m) ? base : base + OWNER_HEAD_MS;
     label = `${own.map(m => m.name).join('・')}の出番`;
   }
@@ -2284,6 +2359,7 @@ async function flow(q, own) {
   const r = await reveal(label, openMs);
   if (!r) { caption('誰も押さなかった', 'bad'); logEv('誰もわからず、押さなかった', 'bad'); return; }
   const chain = [r.m];
+  G.chain = chain;
   qs.first = r.m;
   caption(own.length > 0 && !own.includes(r.m) ? `${r.m.name}が担当より先に押した！` : `${r.m.name}が押した！`);
   say(r.m, '1番！');
@@ -2306,6 +2382,93 @@ async function flow(q, own) {
     await pause(700);
   }
 }
+// ===== 協力：全員が答える =====
+// 問いが出たら誰でも押せ、押した人はそれぞれ自分の文字パネルで答える（CPU の仲間も答える）。正解した人ぜんぶのダメージを足し、
+// 全員正解ならさらに倍率。外しても被弾はなく、誰も正解できなければ敵の攻撃。保険は使わない（全員が答えるので要らない）。
+// ダメージは1人ずつ damageFor で出すので、得意で攻撃力が上がる類いの仕組みは damageFor に足せばそのまま効く
+const COOP_ANSWER_MS = 9000;  // 押してから答えられる時間
+const COOP_ALL_BONUS = 1.5;   // 全員正解の倍率
+const COOP_HP_MUL = 2;        // 全員が答えて削る分、敵の体力を増やす（仮）
+async function flowCoop(q, own) {
+  const qs = G.qs, len = [...q.text].length, open = q.ask * CHAR_MS, pressEnd = len * CHAR_MS + GRACE_MS;
+  const lag = G.party.some(m => m.peer) ? NET_LAG_MS : 0;
+  const S = {}; G.cans = S;
+  const label = own.length ? `${own.map(m => m.name).join('・')}の得意。全員で答える` : '全員で答える';
+  G.qphase = 'reveal'; G.lockText = label;
+  setPhase('reveal', label, pressEnd);
+  const you = player();
+  for (let t = 0; ; t += STEP) {
+    G.shown = Math.min(len, Math.floor(t / CHAR_MS) + 1);
+    if (!AUTO) {
+      const s = S[you.id];
+      if (!s) {
+        G.open = clamp(t / open, 0, 1); G.ctrl = t >= open && t < pressEnd ? 'buzz' : t < open ? 'wait' : 'watch';
+        if (t < open || t >= pressEnd) takeBy('buzz', you);
+        else if (takeBy('buzz', you)) {
+          S[you.id] = { at: t };
+          G.panel = { input: [], targets: [[...q.a], ...(q.alt || []).map(x => [...x])], done: false, ok: false };
+          G.panel.cands = panelCands(G.panel); G.ctrl = 'panel'; say(you, '回答中');
+        }
+      } else if (!s.done && (G.panel?.done || t > s.at + COOP_ANSWER_MS)) {
+        s.done = true; s.ok = !!(G.panel?.done && G.panel.ok);
+        noteStat(q.id, 1); if (s.ok) noteStat(q.id, 2); sendAnswer(q.id, s.ok);
+        G.panel = null; G.ctrl = 'watch'; G.watchText = '答えた。ほかの人を待っている'; say(you, '答えた');
+      }
+    }
+    for (const m of G.party) if (m.peer) {
+      const s = S[m.id];
+      if (!s) {
+        const p = takeBy('buzz', m);
+        if (!p) continue;
+        const claim = Number.isFinite(+p.at) ? +p.at : t;
+        if (claim < open - STEP || claim > pressEnd + lag) continue;
+        S[m.id] = { at: clamp(claim, open, t) }; say(m, '回答中');
+      } else if (!s.done) {
+        const p = takeBy('ansdone', m);
+        if (p) { s.done = true; s.ok = [q.a, ...(q.alt || [])].includes(String(p.s || '').slice(0, 40)); say(m, '答えた'); }
+        else if (t > s.at + COOP_ANSWER_MS + 2 * lag) { s.done = true; s.ok = false; say(m, '時間切れ'); }
+      }
+    }
+    for (const m of G.party) if (cpuControlled(m)) {
+      const s = S[m.id];
+      if (!s && m.k.react != null && t >= open + m.k.react && t < pressEnd) { S[m.id] = { at: t, end: t + 1200 + rnd() * 1800 }; say(m, '回答中'); }
+      else if (s && !s.done && t >= s.end) { s.done = true; s.ok = m.k.knows ? rnd() < 0.95 : rnd() < 0.08; say(m, '答えた'); }
+    }
+    // 友達が途中で抜けたら、その席の答えは外れとして締める
+    for (const m of G.party) if (S[m.id] && !S[m.id].done && !m.peer && !m.player && S[m.id].end == null) { S[m.id].done = true; S[m.id].ok = false; }
+    const busy = G.party.some(m => S[m.id] && !S[m.id].done);
+    if (!busy && (t >= pressEnd || G.party.every(m => S[m.id]))) break;
+    if (t >= pressEnd && G.ph.key === 'reveal') setPhase('answer', '回答中', COOP_ANSWER_MS);
+    await step();
+  }
+  G.panel = null; G.ctrl = 'watch'; G.watchText = '';
+  const order = G.party.filter(m => S[m.id]?.ok).sort((a, b) => S[a.id].at - S[b.id].at);
+  for (const m of G.party) if (S[m.id] && !S[m.id].ok) say(m, '外した…', 'bad');
+  if (!order.length) { caption('誰も正解できなかった', 'bad'); logEv('誰も正解できなかった', 'bad'); return; }
+  const c0 = { ...G.combo };
+  let total = 0;
+  order.forEach((m, i) => {
+    G.combo = { ...c0 };
+    const r = damageFor(m, q, { first: i === 0, quick: i === 0 && S[m.id].at - open <= QUICK_MS });
+    total += r.d; say(m, '正解！', 'good');
+    logEv(`○ ${m.name}が正解：${r.parts.join(' ')} ＝ ${r.d}`, 'good');
+  });
+  G.combo = { g: q.g, n: c0.g === q.g ? c0.n + 1 : 1 };
+  const all = order.length === G.party.length;
+  if (all) {
+    total = Math.round(total * COOP_ALL_BONUS);
+    logEv(`★ 全員正解ボーナス ×${COOP_ALL_BONUS}`, 'good'); G.stat.allOk = (G.stat.allOk || 0) + 1; G.highlights.push('全員正解');
+  }
+  G.enemy.hp = Math.max(0, G.enemy.hp - total);
+  G.hitFlash = true; setTimeout(() => { if (G) G.hitFlash = false; }, 500);
+  render();
+  floatText('#b-top .hpline .bar.foe', `-${total}`, 'dmg' + (total >= 20 ? ' big' : ''));
+  banner(all ? '全員正解' : `${order.length}人正解`, `${G.enemy.name}に${total}ダメージ`, 'good');
+  caption(`${order.map(m => m.name).join('・')}が正解！ ${all ? '全員正解ボーナス！ ' : ''}${G.enemy.name}に${total}ダメージ`, 'good');
+  qs.ok = true; qs.by = order[0]; qs.first = order[0];
+  if (own.includes(order[0])) G.stat.ownerOk++;
+  if (S[order[0].id].at - open <= QUICK_MS) G.stat.quick++;
+}
 async function insure(r, chain) {
   const you = player();
   G.qphase = 'insure';
@@ -2316,7 +2479,8 @@ async function insure(r, chain) {
   const iplans = rest.filter(cpuControlled).map(m => m.k.react != null ? { m, at: 200 + rnd() * 1100 } : null)
     .filter(Boolean).sort((a, b) => a.at - b.at);
   for (let t = 0; t < INSURE_MS && chain.length < 3; t += STEP) {
-    if (!AUTO && rest.includes(you) && !chain.includes(you) && take('buzz')) { chain.push(you); say(you, `保険${chain.length - 1}`); }
+    if (!AUTO && rest.includes(you) && !chain.includes(you) && takeBy('buzz', you)) { chain.push(you); say(you, `保険${chain.length - 1}`); }
+    for (const m of rest) if (m.peer && !chain.includes(m) && chain.length < 3 && takeBy('buzz', m)) { chain.push(m); say(m, `保険${chain.length - 1}`); }
     while (iplans.length && iplans[0].at <= t && chain.length < 3) { const p = iplans.shift(); chain.push(p.m); say(p.m, `保険${chain.length - 1}`); }
     await step();
   }
@@ -2352,6 +2516,530 @@ async function reward() {
   }
   G.screen = 'battle'; G.q = null; G.bub = {}; G.cap = { text: '', cls: '' };
 }
+
+// ===== 友達と対戦（ジャンル持ち寄り。マジアカの決勝の形） =====
+// claude.ai の room で、同じページを開いている人どうしをつなぐ。部屋を作った人（主）の画面が進行と採点を受け持ち、
+// いまの状態を st で全員に配る。答えは全員が ans で主に送る。room の無い所（GitHub Pages など）では出さない
+const VS_QN = 3;                // 1人が持ち寄ったジャンルから出す問題の数
+const VS_BASE = 100;            // 正解の基本点。遅くても正解なら満額
+const VS_SPEED = [50, 30, 10];  // 正解した人の中で、早い順の上乗せ（速さは味付け）
+const VS_AWAY = 50;             // 乗っ取り：ほかの人が持ち寄ったジャンルで、持ち寄った本人より先に（または本人が外して）正解したときの上乗せ
+const VS_EXTRA_MS = 8000;       // 問題文が出きってから答えられる時間
+const VS_RESULT_MS = 3600;      // 1問ごとの結果を見せる時間
+const VS_MAX = 4;
+const VS = { room: null, r: null, code: '', host: false, mode: 'vs', hostSeen: null, err: '', typed: '', crew: null, genre: null, hard: false,
+  view: null, st: null, offs: [], t0: 0, panel: null, sent: -1, lastSent: '', lastAt: 0, timer: 0, game: null };
+(async () => {
+  for (let i = 0; i < 30 && !window.claude?.use; i++) await sleep(100);
+  try { const r = await window.claude?.use?.('room'); if (r) { VS.room = r; if (!G) render(); } } catch {}
+})();
+const vsPeersNow = () => VS.r ? VS.r.peers() : [];
+const vsMe = () => vsPeersNow().find(p => p.sameTab);
+const vsPlayers = () => vsPeersNow().filter(p => p.presence?.vs === 1 && CREW.some(c => c.id === p.presence.crew));
+const vsHostPeer = () => vsPeersNow().find(p => p.presence?.vs === 1 && p.presence.host && !p.sameTab);
+const vsLimit = q => [...q.text].length * CHAR_MS + VS_EXTRA_MS;
+
+async function vsOpen(code, host) {
+  if (!VS.room || VS.r) return;
+  Object.assign(VS, { err: '', code, host, view: 'lobby', st: null, game: null, hostSeen: null, panel: null, sent: -1, lastSent: '' });
+  if (host && !VS.crew) VS.crew = setup.me;
+  render();
+  try { VS.r = await VS.room.join('vs-' + code); }
+  catch (e) {
+    VS.view = null;
+    VS.err = e?.code === 'not_permitted' ? 'このページの共有のされ方では、部屋を使えません' : '部屋に入れませんでした。少し待ってもう一度試してください';
+    lastHtml = ''; render(); return;
+  }
+  VS.offs = [
+    VS.r.onPeers(vsOnPeers),
+    VS.r.on('st', m => { if (!m.sameTab && !VS.host && (!vsHostPeer() || vsHostPeer().peer === m.peer)) { VS.hostSeen = m.peer; vsApply(m.data); } }),
+    VS.r.on('ans', m => { if (!m.sameTab) { if (m.data?.c) coopOnMsg(m.peer, m.data); else vsOnAns(m.peer, m.data); } }),
+  ];
+  vsPresence();
+  VS.timer = setInterval(vsTick, 100);
+  render();
+}
+function vsPresence() { VS.r?.presence({ vs: 1, host: VS.host, crew: VS.crew, genre: VS.genre, hard: VS.hard }).catch(() => {}); }
+async function vsLeave(msg = '') {
+  if (CO.on) coopEnd();
+  for (const off of VS.offs) off();
+  clearInterval(VS.timer);
+  const r = VS.r;
+  Object.assign(VS, { offs: [], r: null, view: null, st: null, game: null, host: false, hostSeen: null, panel: null, timer: 0, err: msg });
+  try { await r?.leave(); } catch {}
+  lastHtml = ''; render();
+}
+function vsOnPeers(ch) {
+  if (!VS.r) return;
+  if (!VS.host) {
+    const hp = vsHostPeer();
+    if (hp) VS.hostSeen = hp.peer;
+    if (VS.hostSeen && ch.left.some(p => p.peer === VS.hostSeen)) { vsLeave('部屋を作った人が抜けたので、部屋を閉じました'); return; }
+  }
+  // 選んでいた顔を、先にいた人も選んでいたら外す（同時に選んだときは、先に部屋にいた人が優先）
+  const mine = vsMe();
+  if (VS.crew && mine && !VS.game && !VS.st?.players) {
+    const others = vsPeersNow().filter(p => !p.sameTab && p.presence?.vs === 1 && p.presence.crew === VS.crew);
+    if (others.some(p => vsPeersNow().indexOf(p) < vsPeersNow().indexOf(mine))) { VS.crew = null; vsPresence(); }
+  }
+  if (CO.on && CO.host && ch.left.length) coopOnLeft(ch.left);
+  if (VS.host && ch.joined.length) vsSync(true);
+  render();
+}
+
+// ---- 主だけが持つ進行 ----
+function vsStart() {
+  if (VS.mode === 'coop') { coopStart(); return; }
+  const seen = new Set();
+  const ps = vsPlayers().filter(p => GENRES[p.presence.genre] && !seen.has(p.presence.crew) && seen.add(p.presence.crew))
+    .sort((a, b) => (b.sameTab ? 1 : 0) - (a.sameTab ? 1 : 0)).slice(0, VS_MAX);
+  if (ps.length < 2) return;
+  // 持ち寄ったジャンルから VS_QN 問ずつ。選んだ難しさを優先し、足りなければ同じジャンルのほかの難しさから
+  const used = new Set(), qs = [];
+  for (const p of ps) {
+    const g = p.presence.genre, hard = !!p.presence.hard;
+    const pool = [...shuffle(QUESTIONS.filter(q => q.g === g && q.m === hard)), ...shuffle(QUESTIONS.filter(q => q.g === g && q.m !== hard))];
+    let n = 0;
+    for (const q of pool) { if (n >= VS_QN) break; if (!used.has(q.id)) { used.add(q.id); qs.push({ id: q.id, by: p.peer }); n++; } }
+  }
+  VS.game = { players: ps.map(p => ({ peer: p.peer, crew: p.presence.crew, genre: p.presence.genre, hard: !!p.presence.hard, score: 0, ok: 0 })),
+    qs, i: -1, ans: {}, res: null, phase: 'q', at: 0 };
+  vsNext();
+}
+function vsNext() {
+  const g = VS.game;
+  g.i++; g.ans = {}; g.res = null; g.at = Date.now();
+  g.phase = g.i >= g.qs.length ? 'end' : 'q';
+  vsSync(true);
+}
+function vsOnAns(peer, d) {
+  const g = VS.game;
+  if (!VS.host || !g || g.phase !== 'q' || !d || typeof d !== 'object') return;
+  const p = g.players.find(x => x.peer === peer);
+  if (!p || g.ans[peer] || d.i !== g.i || typeof d.s !== 'string') return;
+  const q = QBY[g.qs[g.i].id];
+  const s = d.s.slice(0, 40);
+  g.ans[peer] = { ok: [q.a, ...(q.alt || [])].includes(s), ms: clamp(Math.round(+d.ms) || 0, 0, vsLimit(q)), s };
+  vsSync(true);
+}
+function vsScore() {
+  const g = VS.game;
+  const ok = g.players.filter(p => g.ans[p.peer]?.ok).sort((a, b) => g.ans[a.peer].ms - g.ans[b.peer].ms);
+  g.res = g.players.map(p => {
+    const a = g.ans[p.peer], k = ok.indexOf(p);
+    const own = g.ans[g.qs[g.i].by];
+    const away = a?.ok && g.qs[g.i].by !== p.peer && !(own?.ok && own.ms <= a.ms) ? VS_AWAY : 0;
+    const pts = a?.ok ? VS_BASE + (VS_SPEED[k] || 0) + away : 0;
+    p.score += pts; if (a?.ok) p.ok++;
+    return { peer: p.peer, ok: !!a?.ok, ms: a ? a.ms : null, s: a ? a.s : null, pts, k: a?.ok ? k : -1, away: away ? 1 : 0 };
+  });
+  g.phase = 'res'; g.at = Date.now();
+  vsSync(true);
+}
+function vsHostTick() {
+  const g = VS.game;
+  if (!g) return;
+  if (g.phase === 'q') {
+    const q = QBY[g.qs[g.i].id];
+    const here = new Set(vsPeersNow().map(p => p.peer));
+    const waiting = g.players.filter(p => here.has(p.peer) && !g.ans[p.peer]);
+    if (!waiting.length || Date.now() - g.at > vsLimit(q) + 800) vsScore();
+  } else if (g.phase === 'res' && Date.now() - g.at > VS_RESULT_MS) vsNext();
+  vsSync();
+}
+function vsSync(force) {
+  if (!VS.host || !VS.r) return;
+  if (CO.on) { coopSync(force); return; }
+  const g = VS.game;
+  const st = g ? { phase: g.phase, i: g.i, n: g.qs.length, q: g.qs[g.i]?.id || null, by: g.qs[g.i]?.by || null,
+    players: g.players.map(p => [p.peer, p.crew, p.genre, p.hard ? 1 : 0, p.score, p.ok]),
+    done: g.phase === 'q' ? Object.keys(g.ans) : [], res: g.res } : { phase: 'lobby', mode: VS.mode };
+  const s = JSON.stringify(st), now = Date.now();
+  if (!force && s === VS.lastSent && now - VS.lastAt < 1500) return;
+  if (s !== VS.lastSent) vsApply(st);
+  VS.lastSent = s; VS.lastAt = now;
+  VS.r.emit('st', st).catch(() => {});
+}
+
+// ---- 全員：主から来た状態で画面を作る ----
+function vsApply(st) {
+  if (!st || typeof st !== 'object') return;
+  if (st.coop) { coopApply(st); return; }
+  if (CO.on && !CO.host) coopEnd();
+  const prev = VS.st;
+  VS.st = st;
+  VS.view = st.phase === 'lobby' ? 'lobby' : 'game';
+  if (st.phase === 'q' && (prev?.phase !== 'q' || prev.i !== st.i)) vsNewQ(st);
+  if (st.phase !== 'q') VS.panel = null;
+  render();
+}
+function vsNewQ(st) {
+  const q = QBY[st.q];
+  VS.t0 = performance.now(); VS.sent = -1; VS.panel = null;
+  const me = vsMe();
+  if (!q || !me || !(st.players || []).some(p => p[0] === me.peer)) return;
+  VS.panel = { input: [], targets: [[...q.a], ...(q.alt || []).map(x => [...x])], done: false, ok: false, q };
+  VS.panel.cands = panelCands(VS.panel, q);
+  noteStat(q.id, 0);
+}
+function vsPick(ch) {
+  const p = VS.panel;
+  if (!p || p.done || VS.st?.phase !== 'q') return;
+  const i = p.input.length;
+  p.input.push(ch);
+  p.targets = p.targets.filter(t => t[i] === ch);
+  if (!p.targets.length) { p.done = true; p.ok = false; }
+  else if (p.targets.some(t => t.length === p.input.length)) { p.done = true; p.ok = true; }
+  else p.cands = panelCands(p, p.q);
+  if (p.done) vsSend();
+  render();
+}
+function vsSend() {
+  const p = VS.panel, st = VS.st;
+  if (!p || !st || VS.sent === st.i) return;
+  VS.sent = st.i;
+  const d = { i: st.i, s: p.input.join(''), ms: Math.round(performance.now() - VS.t0) };
+  if (VS.host) vsOnAns(vsMe()?.peer, d);
+  else VS.r?.emit('ans', d).catch(() => {});
+  const q = p.q;
+  noteStat(q.id, 1); if (p.ok) noteStat(q.id, 2); sendAnswer(q.id, p.ok); saveStats();
+}
+function vsTick() {
+  if (CO.on) { if (CO.host) coopSync(); else coopGuestTick(); return; }
+  if (VS.host) vsHostTick();
+  const st = VS.st, p = VS.panel;
+  if (st?.phase === 'q') {
+    // 時間切れ：途中まで入れた分で送る（外れ）
+    if (p && !p.done && performance.now() - VS.t0 > vsLimit(p.q)) { p.done = true; p.ok = false; vsSend(); }
+    render();
+  }
+}
+
+// ---- 画面 ----
+function vsCard() {
+  if (!VS.room) return '';
+  return `<div class="card">
+    <h2><span class="kick">WITH FRIENDS</span>友達と遊ぶ</h2>
+    <p class="muted" style="font-size:.85rem">部屋を作った人が「対戦」か「協力」を選びます。<br><b>対戦</b>：2〜${VS_MAX}人で、1人1つずつジャンルを持ち寄ります。持ち寄ったジャンルから${VS_QN}問ずつ出て、全員が同じ問題に同時に答えます。正解で${VS_BASE}点、正解した中で早い順に${VS_SPEED.map(x => '+' + x).join('・')}。ほかの人が持ち寄ったジャンルで、持ち寄った本人より先に正解すると「乗っ取り」で+${VS_AWAY}。<br><b>協力</b>：友達がねりんずの席に入り、一緒にダンジョンに潜ります。問いが出たら全員が押して、それぞれ答えます。正解した人のダメージを足し、全員正解ならさらに×${COOP_ALL_BONUS}。空いた席は CPU が動かします。</p>
+    ${VS.err ? `<p class="vs-err">${esc(VS.err)}</p>` : ''}
+    <div class="btns"><button data-act="vsmake">部屋を作る</button></div>
+    <div class="btns codeline"><input class="codein" id="vscode" inputmode="text" autocapitalize="off" autocomplete="off" spellcheck="false" maxlength="4" placeholder="部屋の名前（4文字）" value="${esc(VS.typed)}" aria-label="部屋の名前"><button data-act="vsjoin">部屋に入る</button></div>
+  </div>`;
+}
+function vsMate(p, coop) {
+  const c = crewOf(p.presence.crew), g = coop ? favOf(c).map(x => GENRES[x]).join('・') + 'が得意' : GENRES[p.presence.genre];
+  return `<div>${face(c)}<p><b>${esc(c.name)}</b>${p.sameTab ? '（あなた）' : ''}${p.presence.host ? '　部屋を作った人' : ''}<br>
+    <span class="muted">${g ? `${g}${p.presence.hard ? '・マニアック' : ''}` : 'ジャンルを選んでいるところ'}</span></p></div>`;
+}
+function vsLobbyView() {
+  const ps = vsPeersNow();
+  const takenBy = id => ps.find(p => !p.sameTab && p.presence?.vs === 1 && p.presence.crew === id);
+  const players = vsPlayers();
+  const ready = players.filter(p => GENRES[p.presence.genre]);
+  const coop = (VS.host ? VS.mode : VS.st?.mode) === 'coop';
+  const why = !VS.crew ? '顔を選んでください' : coop ? (players.length < 2 ? 'あと1人以上、顔を選んだ人が要ります' : '')
+    : !VS.genre ? '持ち寄るジャンルを選んでください' : ready.length < 2 ? 'あと1人以上、ジャンルを選んだ人が要ります' : '';
+  return `<div class="logo"><div class="en">${coop ? 'CO-OP' : 'VERSUS'}</div><h1>${coop ? '友達と協力' : '友達と対戦'}</h1></div>
+  <div class="card"><h2><span class="kick">MODE</span>遊び方</h2>
+    ${VS.host ? `<div class="seg two">${[['vs', '対戦'], ['coop', '協力']].map(([k, n]) => `<button class="${VS.mode === k ? 'on' : ''}" data-act="vsmode" data-v="${k}">${n}</button>`).join('')}</div>` : ''}
+    <p class="muted" style="font-size:.85rem">${coop ? `一緒にダンジョンに潜ります。あなたは選んだ顔の席に入ります。問いが出たら担当に関係なく全員が押して、それぞれ答えます（担当は得意の印）。正解した人のダメージを足し、全員正解ならさらに×${COOP_ALL_BONUS}。外しても被弾はなく、誰も正解できないと敵の攻撃。作戦の札の操作と報酬選びは、誰がやってもかまいません。空いた席は CPU。`
+      : '1人1つずつジャンルを持ち寄り、全員が同じ問題に同時に答えます。'}${VS.host ? '' : '<br>遊び方は部屋を作った人が選びます。'}</p>
+  </div>
+  <div class="card"><h2><span class="kick">ROOM</span>部屋の名前</h2>
+    <p class="roomcode">${esc(VS.code)}</p>
+    <p class="muted" style="font-size:.85rem">${VS.host ? 'この4文字を友達に伝えてください。友達はこのページを開いて「部屋に入る」に入れます。' : '部屋を作った人が始めるのを待っています。'}${VS.r ? '' : '<br>部屋につないでいます…'}</p>
+  </div>
+  <div class="card"><h2><span class="kick">FACE</span>あなたの顔</h2>
+    <div class="crew">${CREW.map(c => { const t = takenBy(c.id); return `<button class="${VS.crew === c.id ? 'on' : ''}${t ? ' off' : ''}" ${t ? 'aria-disabled="true" data-why="ほかの人が選んでいる顔です"' : ''} data-act="vscrew" data-v="${c.id}">${face(c)}<b>${esc(c.name)}</b><span>${t ? '使用中' : VS.crew === c.id ? 'あなた' : '空き'}</span></button>`; }).join('')}</div>
+  </div>
+  ${coop ? '' : `<div class="card"><h2><span class="kick">GENRE</span>持ち寄るジャンル</h2>
+    <div class="genres">${Object.keys(GENRES).map(g => `<button class="${VS.genre === g ? 'on' : ''}" data-act="vsgenre" data-v="${g}" data-g="${g}">${GENRES[g]}</button>`).join('')}</div>
+    <div class="seg two">${[['0', 'ふつう'], ['1', 'マニアック']].map(([k, n]) => `<button class="${(VS.hard ? '1' : '0') === k ? 'on' : ''}" data-act="vshard" data-v="${k}">${n}</button>`).join('')}</div>
+    <p class="muted" style="font-size:.8rem">このジャンルから${VS_QN}問出て、全員が答えます。自分が強いジャンルを持ち寄るのが基本。人の持ち寄りで本人より先に正解すると、乗っ取りで+${VS_AWAY}。マニアックは、自分も外しやすくなります。</p>
+  </div>`}
+  <div class="card"><h2><span class="kick">PLAYERS</span>集まった人（${Math.min(players.length, VS_MAX)}/${VS_MAX}）</h2>
+    <div class="mates">${players.map(p => vsMate(p, coop)).join('') || '<p class="muted">つないでいます…</p>'}</div>
+    ${players.length > VS_MAX ? `<p class="muted" style="font-size:.8rem">${VS_MAX}人を超えた分は、見ているだけになります。</p>` : ''}
+  </div>
+  ${VS.host ? `<div class="cta"><button class="big go" data-act="vsstart" ${why ? 'disabled' : ''}>${why || (coop ? '一緒に潜る' : '対戦を始める')}</button></div>` : ''}
+  <div class="btns"><button data-act="vsleave">部屋を出る</button></div>`;
+}
+const vsRow = p => ({ peer: p[0], c: crewOf(p[1]), genre: p[2], hard: !!p[3], score: +p[4] || 0, ok: +p[5] || 0 });
+function vsGameView() {
+  const st = VS.st, me = vsMe()?.peer;
+  const P = (st.players || []).map(vsRow);
+  if (st.phase === 'end') return vsEndView(P, me);
+  const q = QBY[st.q];
+  const res = st.phase === 'res' ? Object.fromEntries((st.res || []).map(r => [r.peer, r])) : {};
+  const board = `<div class="vsboard" style="--n:${P.length}">${P.map(p => {
+    const r = res[p.peer];
+    const tag = st.phase === 'q' ? ((st.done || []).includes(p.peer) ? '<i>回答済み</i>' : '<i class="dim">考え中</i>')
+      : r ? (r.ok ? `<i class="ok">+${r.pts}${r.k === 0 && P.length > 1 ? ' 1番' : ''}${r.away ? ' 乗取' : ''}</i>` : `<i class="ng">${r.s == null ? '時間切れ' : '×'}</i>`) : '';
+    return `<div class="${p.peer === me ? 'you' : ''} ${st.by === p.peer ? 'by' : ''}">${face(p.c)}<b>${esc(p.c.name)}${p.peer === me ? '（あなた）' : ''}</b><em>${p.score}</em>${tag}</div>`;
+  }).join('')}</div>`;
+  if (!q) return board;
+  const by = P.find(p => p.peer === st.by);
+  const el = performance.now() - VS.t0, lim = vsLimit(q);
+  const len = [...q.text].length, n = st.phase === 'q' ? Math.min(len, Math.floor(el / CHAR_MS) + 1) : len;
+  const text = esc([...q.text].slice(0, n).join('')) + (n < len ? '<span class="cursor"></span>' : '');
+  let ctrl;
+  if (st.phase === 'res') {
+    const mine = res[me];
+    ctrl = `<div class="big idle">${mine ? (mine.ok ? `正解！ +${mine.pts}点${mine.away ? `（乗っ取り +${VS_AWAY} 込み）` : ''}` : mine.s ? `あなたの答え：${esc(mine.s)}` : '時間切れ') : '次の問題へ'}</div>`;
+  } else if (VS.panel && !VS.panel.done) {
+    const p = VS.panel, a = p.targets[0] || [...q.a];
+    ctrl = `<div class="input">${a.map((ch, i) => i < p.input.length ? esc(p.input[i]) : '<span class="slot">○</span>').join('')}</div>
+      <div class="pad">${p.cands.map(ch => `<button data-act="vschar" data-v="${esc(ch)}">${esc(ch)}</button>`).join('')}</div>`;
+  } else ctrl = `<div class="big idle">${VS.panel ? 'ほかの人を待っています' : '見ているだけ（この対戦には入っていません）'}</div>`;
+  return `<div class="vsgame">${board}
+    <div class="stage field q">
+      <div class="phase"><span class="kick">Q${st.i + 1}/${st.n}</span><span class="t">${by ? `${esc(by.c.name)}の持ち寄り` : ''}</span></div>
+      <div class="fcard" data-g="${q.g}">
+        <div class="fhead">${chip(q.g)}${q.m ? '<span class="chip mania">マニアック</span>' : ''}</div>
+        <div class="bar time"><i style="width:${st.phase === 'q' ? clamp(100 - 100 * el / lim, 0, 100) : 0}%"></i></div>
+        <div class="qtext">${text}</div>
+        ${st.phase === 'res' ? `<div class="reveal-ans">答え：<b>${esc(q.disp)}</b>（${esc(q.a)}）${q.note ? '　' + esc(q.note) : ''}</div>` : ''}
+      </div>
+    </div>
+    <div class="ctrl">${ctrl}</div></div>`;
+}
+function vsEndView(P, me) {
+  // 順位は下から1人ずつ明かし、1位を最後に見せる
+  const order = [...P].sort((a, b) => b.score - a.score);
+  const rank = p => 1 + order.filter(x => x.score > p.score).length;
+  const rows = [...order].reverse().map((p, k) => `<li style="--k:${k}" class="${p.peer === me ? 'you' : ''} ${rank(p) === 1 ? 'top' : ''}">
+    <span class="rk">${rank(p)}位</span>${face(p.c)}<b>${esc(p.c.name)}${p.peer === me ? '（あなた）' : ''}</b>
+    <span class="muted">${GENRES[p.genre] || ''}${p.hard ? '・マニアック' : ''}を持ち寄り／${p.ok}問正解</span><em>${p.score}</em></li>`).join('');
+  const mine = P.find(p => p.peer === me);
+  return `<div class="result-head ${mine && rank(mine) === 1 ? 'win' : mine ? 'lose' : ''}"><div class="en">${mine ? (rank(mine) === 1 ? 'WINNER' : 'RESULT') : 'RESULT'}</div><h1>対戦の結果</h1></div>
+  <ol class="rank">${rows}</ol>
+  ${VS.host ? '<div class="cta"><button class="big go" data-act="vsagain">部屋に戻ってもう一度</button></div>' : '<p class="muted" style="text-align:center">部屋を作った人が「もう一度」を押すと、部屋に戻ります。</p>'}
+  <div class="btns"><button data-act="vsleave">部屋を出る</button></div>`;
+}
+function vsAct(act, v) {
+  if (act === 'vsmake') {
+    const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
+    vsOpen(Array.from({ length: 4 }, () => pick([...abc])).join(''), true); return;
+  }
+  if (act === 'vsjoin') {
+    const code = (VS.typed || '').toLowerCase();
+    if (!/^[a-z0-9]{4}$/.test(code)) { showWhy('部屋を作った人から聞いた4文字を入れてください'); return; }
+    vsOpen(code, false); return;
+  }
+  if (act === 'vsleave') { vsLeave(); return; }
+  if (act === 'vschar') { vsPick(v); return; }
+  if (act === 'vscrew' && CREW.some(c => c.id === v)) { VS.crew = v; if (VS.host) setup.me = v; vsPresence(); render(); return; }
+  if (act === 'vsgenre' && GENRES[v]) { VS.genre = v; vsPresence(); render(); return; }
+  if (act === 'vshard') { VS.hard = v === '1'; vsPresence(); render(); return; }
+  if (act === 'vsmode' && VS.host && !VS.game && ['vs', 'coop'].includes(v)) { VS.mode = v; vsSync(true); render(); return; }
+  if (act === 'vsstart' && VS.host && !VS.game && !CO.on) { vsStart(); return; }
+  if (act === 'vsagain' && VS.host) { VS.game = null; vsSync(true); VS.view = 'lobby'; render(); }
+}
+document.addEventListener('input', e => { if (e.target.id === 'vscode') VS.typed = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 4); });
+document.addEventListener('keydown', e => { if (e.target.id === 'vscode' && e.key === 'Enter') vsAct('vsjoin'); });
+
+// ===== 友達と協力（ねりんずの席に友達が入る） =====
+// 部屋とロビーは対戦と同じ。主の画面がいつものゲーム（G）をそのまま回し、友達が入った席（m.peer）は CPU が動かさない。
+// 主は G の要約を st で配り（coop: 1。4KB 以内）、友達の画面はそれから G を組み直して同じ画面を描く。
+// 友達の操作（押す・答え・札の操作・報酬）は ans で主に送る（c で種類を分ける）。問題文の出方と時間の棒は、友達の画面が手元の時計で進める
+const CO = { on: false, host: false, seats: {}, st: null, at: 0, phn: -1, buzzed: false, sel: [], selKey: '', panel: null, panelPhn: -1,
+  sent: '', sentAt: 0, fxn: 0, logOpen: false };
+const coopMine = () => { const me = vsMe(); return me && G ? G.party.find(m => m.peer === me.peer) : null; };
+
+// ---- 主 ----
+function coopStart() {
+  const seen = new Set();
+  const ps = vsPlayers().filter(p => !seen.has(p.presence.crew) && seen.add(p.presence.crew)).slice(0, CREW.length);
+  if (ps.length < 2 || !VS.crew) return;
+  setup.me = VS.crew;
+  Object.assign(CO, { on: true, host: true, seats: Object.fromEntries(ps.filter(p => !p.sameTab).map(p => [p.presence.crew, p.peer])), sent: '', sentAt: 0 });
+  VS.view = 'coop'; lastHtml = '';
+  startRun();
+  coopSync(true);
+}
+// startRun の中から：友達の席の仲間に peer を付け、あなたと同じく得意2つを担当にする
+function coopSeat() {
+  for (const m of G.party) {
+    const peer = CO.seats[m.id];
+    if (!peer || m.player) continue;
+    m.peer = peer; m.fav = favOf(crewOf(m.id));
+    for (const g of m.fav) m.lv[g] = Math.max(OWNER_LV, m.lv[g] || 0);
+  }
+}
+function coopOnLeft(left) {
+  if (!G) return;
+  for (const m of G.party) if (m.peer && left.some(p => p.peer === m.peer)) {
+    delete m.peer; logEv(`${m.name}の席の友達が抜けた。ここからは CPU が動かす`, 'bad');
+  }
+}
+function coopOnMsg(peer, d) {
+  if (!CO.on || !CO.host || !G || !d || typeof d !== 'object') return;
+  const m = G.party.find(x => x.peer === peer);
+  if (!m) return; // 席の無い人（見ているだけ）
+  if (d.c === 'prog') { if (G.active === m && G.qphase === 'answer') { const n = clamp(+d.n || 0, 0, 20), len = [...G.q.a].length; say(m, '●'.repeat(Math.min(n, len)) + '○'.repeat(Math.max(0, len - n))); } return; }
+  if (d.c === 'ans') { pending.push({ type: 'ansdone', peer, s: String(d.s || '') }); return; }
+  if (d.c === 'buzz') { pending.push({ type: 'buzz', peer, at: +d.at }); return; }
+  if (d.c === 'op' && ['go', 'swap', 'redraw', 'skill', 'reward', 'back'].includes(d.type)) pending.push({ type: d.type, v: typeof d.v === 'string' ? d.v.slice(0, 20) : undefined, sel: d.sel, peer });
+}
+const coopCard = c => c ? [c.g, c.m ? 1 : 0, c.big ? 1 : 0, c.bossLock ? 1 : 0, c.hard ? 1 : 0] : null;
+function coopSnap() {
+  const ph = G.ph || { key: '', label: '', dur: 1, t: 0 };
+  const st = { coop: 1, sc: G.screen, bi: G.bi, hp: G.hp, ki: G.ki, ehp: G.enemy?.hp ?? 0,
+    party: G.party.map(m => [m.id, m.peer || '', m.player || m.peer ? 1 : 0]),
+    qu: G.queue.map(coopCard), hold: coopCard(G.hold), card: coopCard(G.card), q: G.q?.id || null, qp: G.qphase,
+    phn: G.phn || 0, phk: ph.key, phl: ph.label, phd: ph.dur, sh: G.shown, sa: G.showAns ? 1 : 0, ok: G.qs?.ok ? 1 : 0,
+    act: G.active?.id || null, chain: (G.chain || []).map(m => m.id), bub: Object.fromEntries(Object.entries(G.bub).map(([k, b]) => [k, [b.text, b.cls]])),
+    cap: [G.cap.text, G.cap.cls], combo: [G.combo.g, G.combo.n], sk: Object.keys(G.skills), kept: G.keptThisBattle ? 1 : 0, bp: G.bplans,
+    lt: G.lockText || '', wt: G.watchText || '', qr: G.qrate || null, qa: G.queueAnim ? 1 : 0, fx: G.fx || null,
+    log: G.log.slice(-6).map(l => [l.text, l.cls]), emax: G.enemy?.maxHp ?? 0, qn: G.stat.q,
+    cans: G.cans ? Object.fromEntries(Object.entries(G.cans).map(([k, v]) => [k, v.done ? 'd' : 'a'])) : null };
+  if (G.screen !== 'battle') Object.assign(st, { tb: G.table.map(c => c.g), rs: G.rewardStep ?? null, of: G.offer || [] });
+  if (G.screen === 'end') Object.assign(st, { stat: G.stat, hl: G.highlights.slice(-6), clear: G.clear ? 1 : 0 });
+  // 4KB に収める：はみ出すときは記録から削る
+  while (new TextEncoder().encode(JSON.stringify(st)).length > 3800 && st.log.length) st.log.shift();
+  return st;
+}
+function coopSync(force) {
+  if (!CO.on || !CO.host || !VS.r || !G) return;
+  const st = coopSnap(), s = JSON.stringify(st), now = performance.now();
+  // 変わったときに送る（多くても1秒に5回）。変わらなくても1.5秒ごとに送り直す（届かなかった分と途中から来た人のため）
+  if (!force && (s === CO.sent ? now - CO.sentAt < 1500 : now - CO.sentAt < 200)) return;
+  CO.sent = s; CO.sentAt = now;
+  st.pht = G.ph ? G.ph.t : 0;
+  VS.r.emit('st', st).catch(() => {});
+}
+function coopBackToRoom() {
+  // 主が「部屋に戻る」：ロビーに戻して、友達にも知らせる
+  CO.on = false; CO.host = false; CO.seats = {};
+  VS.view = VS.r ? 'lobby' : null; VS.game = null;
+  vsSync(true);
+}
+function coopEnd() {
+  if (CO.host) { if (G) for (const m of G.party) delete m.peer; } // 主が部屋を出たら、残りは CPU でそのまま続ける
+  else { G = null; lastHtml = ''; }
+  Object.assign(CO, { on: false, host: false, seats: {}, st: null, panel: null, sel: [] });
+}
+
+// ---- 友達の画面 ----
+function coopApply(st) {
+  if (VS.host) return;
+  const first = !CO.on;
+  CO.on = true; CO.host = false; VS.view = 'coop'; VS.st = null;
+  CO.st = st; CO.at = performance.now();
+  if (first) { CO.phn = -1; lastHtml = ''; }
+  if (st.phn !== CO.phn) { CO.phn = st.phn; CO.buzzed = false; }
+  const key = JSON.stringify(st.qu) + st.qp;
+  if (key !== CO.selKey) { CO.selKey = key; CO.sel = []; }
+  if (st.fx && st.fx[0] !== CO.fxn) { if (!first) banner(st.fx[1], st.fx[2], st.fx[3]); CO.fxn = st.fx[0]; }
+  coopBuild();
+  render();
+}
+const coopUnCard = a => a ? { id: 0, g: a[0], m: !!a[1], big: !!a[2], bossLock: !!a[3], hard: !!a[4], src: '' } : null;
+// 主から来た要約で G を組み直す。描く関数（battleView など）は G を読むだけなので、そのまま使える
+function coopBuild() {
+  const st = CO.st, me = vsMe()?.peer;
+  const party = (st.party || []).map(([id, peer, human]) => {
+    const c = crewOf(id), m = { ...c, lv: { ...c.lv }, peer: peer || null, player: !!peer && peer === me };
+    if (human) { m.fav = favOf(c); for (const g of m.fav) m.lv[g] = Math.max(OWNER_LV, m.lv[g] || 0); }
+    return m;
+  });
+  const d = ENEMIES[st.bi] || ENEMIES[0];
+  const byId = id => party.find(m => m.id === id) || null;
+  G = { screen: st.sc, party, bi: st.bi, hp: st.hp, maxHp: 100, ki: st.ki,
+    enemy: { ...d, maxHp: st.emax || d.hp, hp: st.ehp }, queue: (st.qu || []).map(coopUnCard), hold: coopUnCard(st.hold), card: coopUnCard(st.card),
+    q: st.q ? QBY[st.q] || null : null, qphase: st.qp, shown: st.sh, showAns: !!st.sa, qs: { ok: !!st.ok }, active: byId(st.act),
+    chain: (st.chain || []).map(byId).filter(Boolean),
+    bub: Object.fromEntries(Object.entries(st.bub || {}).map(([k, b]) => [k, { text: b[0], cls: b[1] }])),
+    cap: { text: st.cap?.[0] || '', cls: st.cap?.[1] || '' }, combo: { g: st.combo?.[0] ?? null, n: st.combo?.[1] || 0 },
+    skills: Object.fromEntries((st.sk || []).filter(k => SKILLS[k]).map(k => [k, true])), keptThisBattle: !!st.kept, bplans: st.bp || 0,
+    lockText: st.lt, watchText: st.wt, qrate: st.qr, queueAnim: !!st.qa, log: (st.log || []).map(([text, cls]) => ({ text, cls })),
+    logOpen: CO.logOpen, sel: CO.sel, ph: { key: st.phk, label: st.phl, dur: st.phd || 1, t: 0 }, ctrl: 'watch', open: 0, panel: null,
+    table: (st.tb || []).map(g => mkCard(g)), rewardStep: st.rs ?? null, offer: st.of || [],
+    stat: st.stat || { q: 0, ok: 0, owned: 0, ownerOk: 0, quick: 0, insured: 0, swap: 0, redraw: 0, skill: 0, combo: 0 }, highlights: st.hl || [], clear: !!st.clear };
+  coopDerive();
+}
+// 手元の時計で進める分：時間の棒・問題文の出方・自分のボタン
+function coopDerive() {
+  const st = CO.st, me = coopMine();
+  const t = (st.pht || 0) + (performance.now() - CO.at);
+  G.ph.t = Math.min(t, G.ph.dur);
+  const q = G.q;
+  if (q && G.qphase === 'reveal') G.shown = Math.max(st.sh || 0, Math.min([...q.text].length, Math.floor(t / CHAR_MS) + 1));
+  G.panel = null; G.ctrl = 'watch';
+  if (!me) { G.watchText = G.watchText || '見ているだけ（席に入っていません）'; return; }
+  if (G.screen !== 'battle') return;
+  if (G.qphase === 'plan') G.ctrl = 'plan';
+  else if (G.qphase === 'reveal' && q) {
+    // 全員が答える：押したら手元に文字パネルを出す（主の返事を待たない）
+    const key = `${st.qn}:${q.id}`, p = CO.panel && CO.panelKey === key ? CO.panel : null;
+    if (st.cans?.[me.id] === 'd' || p?.done) { G.watchText = '答えた。ほかの人を待っている'; return; }
+    if (p) { G.panel = p; G.ctrl = 'panel'; return; }
+    if (st.phk !== 'reveal') { G.watchText = '押せる時間は終わった'; return; }
+    const open = q.ask * CHAR_MS;
+    G.open = clamp(t / open, 0, 1); G.ctrl = t >= open ? 'buzz' : 'wait';
+  } else if (G.qphase === 'insure') {
+    if (!G.chain.includes(me) && !CO.buzzed) G.ctrl = 'insure';
+  } else if (G.qphase === 'answer' && G.active === me && q) {
+    // 自分の番：文字パネルを手元に出す（答えるたびに作り直さない）
+    if (CO.panelPhn !== st.phn) {
+      CO.panelPhn = st.phn;
+      CO.panel = { input: [], targets: [[...q.a], ...(q.alt || []).map(x => [...x])], done: false, ok: false, q, sent: false };
+      CO.panel.cands = panelCands(CO.panel, q);
+    }
+    if (!CO.panel.done) { G.panel = CO.panel; G.ctrl = 'panel'; }
+    else G.watchText = '答えを送った';
+  }
+}
+function coopGuestTick() {
+  if (!CO.st || !G) return;
+  coopDerive(); render();
+}
+function coopSend(d) { VS.r?.emit('ans', d).catch(() => {}); }
+function coopGuestAct(act, v) {
+  if (!G) return;
+  if (act === 'motion') { motionPref = v; try { localStorage.setItem(MOTION_KEY, v); } catch {} lastHtml = ''; render(); return; }
+  if (!coopMine()) return;
+  if (act === 'sel') {
+    G.queueAnim = false;
+    if (G.qphase !== 'plan') return;
+    const i = +v, a = CO.sel[0];
+    if (a === i) CO.sel = [];
+    else if (a == null) CO.sel = [i];
+    else {
+      const why = [G.queue[a], G.queue[i]].some(c => !c || locked(c)) ? '🔒の札（大技・ボスの札）は入れ替えられない'
+        : G.ki < COST.swap ? `気力が足りない（入れ替えに気力${COST.swap}が要る、いまは${G.ki}）` : '';
+      if (why) { showWhy(why); CO.sel = [i]; }
+      else { coopSend({ c: 'op', type: 'swap', sel: [a, i] }); CO.sel = []; }
+    }
+    G.sel = CO.sel; render(); return;
+  }
+  if (act === 'unsel') { CO.sel = []; G.sel = []; render(); return; }
+  if (act === 'go' || act === 'redraw' || act === 'skill') { coopSend({ c: 'op', type: act, v, sel: CO.sel }); CO.sel = []; G.sel = []; render(); return; }
+  if (act === 'reward' || act === 'back') { coopSend({ c: 'op', type: act, v }); return; }
+  if (act === 'buzz') {
+    if (!['buzz', 'insure'].includes(G.ctrl)) return;
+    CO.buzzed = true; coopSend({ c: 'buzz', at: Math.round((CO.st.pht || 0) + performance.now() - CO.at) });
+    if (G.qphase === 'reveal' && G.q) {
+      const q = G.q;
+      CO.panelKey = `${CO.st.qn}:${q.id}`;
+      CO.panel = { input: [], targets: [[...q.a], ...(q.alt || []).map(x => [...x])], done: false, ok: false, q, sent: false };
+      CO.panel.cands = panelCands(CO.panel, q);
+    } coopDerive(); render(); return;
+  }
+  if (act === 'char') {
+    const p = CO.panel;
+    if (!p || p.done) return;
+    G.panel = p; panelPick(v);
+    coopSend({ c: 'prog', n: p.input.length });
+    if (p.done && !p.sent) {
+      p.sent = true;
+      coopSend({ c: 'ans', s: p.input.join('') });
+      noteStat(p.q.id, 0); noteStat(p.q.id, 1); if (p.ok) noteStat(p.q.id, 2); sendAnswer(p.q.id, p.ok); saveStats();
+    }
+    coopDerive(); render();
+  }
+}
+app.addEventListener('toggle', e => { if (CO.on && !CO.host && e.target.matches('details.log')) CO.logOpen = e.target.open; }, true);
 
 render();
 if (AUTO) { const m = location.hash.match(/auto-(\w+)/); if (m && CREW.some(c => c.id === m[1])) setup.me = m[1]; startRun(); }

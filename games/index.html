@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>れんれんゲームス</title>
+  <meta name="description" content="りゅー / うゆりがつくったブラウザゲームのゲーム集。カードゲーム、早押しクイズ、パズル、ノベル、子ども向けのまなびゲームまで、ぜんぶスマホで遊べます。">
+  <meta name="theme-color" content="#120d24">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="れんれんゲームス">
+  <meta property="og:description" content="つくったゲーム、ぜんぶここで遊べる。カードゲーム・早押しクイズ・パズル・ノベル・子ども向け。">
+  <meta property="og:url" content="https://princetottino10-bit.github.io/LINKS/games/">
+  <meta property="og:image" content="https://princetottino10-bit.github.io/LINKS/games/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@suke69">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* 決まり: 夜のゲームセンター。濃い紫紺の地に、黄（ごほうび・主ボタン）を1点だけ。
+       角は全部 14px / 10px / 999px の3つに絞る。色は下の変数からしか使わない。 */
+    :root {
+      color-scheme: dark;
+      --bg: #120d24;           /* 地 */
+      --bg-glow: #3b1f78;      /* 地の奥の光 */
+      --panel: #1d1638;        /* 板 */
+      --panel-2: #271e4a;      /* 板（押した・乗せた） */
+      --line: rgba(255, 255, 255, 0.1);
+      --text: #f6f3ff;         /* 文字 */
+      --text-2: rgba(240, 234, 255, 0.74); /* 薄い文字 */
+      --text-3: rgba(240, 234, 255, 0.52);
+      --pop: #ffd23f;          /* 強調・主ボタン（1画面に1点） */
+      --pop-ink: #2a1a00;      /* 強調の上の文字 */
+      --pink: #ff5fa2;         /* ロゴの2色目 */
+      --cyan: #5ce1e6;         /* ロゴの3色目 */
+      --r: 14px;
+      --r-s: 10px;
+      --gutter: 16px;
+      --logo: 'Dela Gothic One', system-ui, sans-serif;
+      --body: 'M PLUS Rounded 1c', system-ui, -apple-system, 'Hiragino Sans', sans-serif;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--body);
+      font-weight: 500;
+      background:
+        radial-gradient(700px 420px at 50% -160px, var(--bg-glow), transparent 70%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    :focus-visible { outline: 3px solid var(--pop); outline-offset: 3px; border-radius: var(--r-s); }
+
+    .wrap {
+      max-width: 1080px;
+      margin: 0 auto;
+      /* ホーム画面から開いたとき、ノッチや丸い角の下に潜らないように */
+      padding:
+        calc(env(safe-area-inset-top) + 20px)
+        calc(env(safe-area-inset-right) + var(--gutter))
+        calc(env(safe-area-inset-bottom) + 40px)
+        calc(env(safe-area-inset-left) + var(--gutter));
+    }
+
+    /* ===== ロゴ ===== */
+    .hero { text-align: center; padding: 18px 0 22px; }
+
+    .logo {
+      font-family: var(--logo);
+      font-weight: 400;
+      font-size: clamp(38px, 11vw, 64px);
+      line-height: 1.1;
+      letter-spacing: 0.02em;
+    }
+    .logo .ren { display: inline-block; color: var(--pop); }
+    .logo .ren:nth-child(2) { color: var(--pink); transform: rotate(4deg) translateY(-2px); }
+    .logo .games { display: block; color: var(--text); font-size: 0.62em; letter-spacing: 0.12em; margin-top: 2px; }
+
+    .lead { margin-top: 12px; font-size: 14px; color: var(--text-2); }
+    .count { color: var(--pop); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+    /* ===== きょうのいちおし ===== */
+    .pick {
+      display: grid;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      margin-bottom: 26px;
+    }
+    .pick-img { position: relative; aspect-ratio: 16 / 10; background: var(--panel-2); }
+    .pick-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pick-label {
+      position: absolute; left: 10px; top: 10px;
+      background: var(--pink); color: #fff;
+      font-size: 12px; font-weight: 800;
+      padding: 4px 10px; border-radius: 999px;
+    }
+    .pick-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .pick-body h2 { font-size: 22px; font-weight: 800; line-height: 1.35; }
+    .pick-body p { font-size: 14px; color: var(--text-2); }
+
+    .play {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      min-height: 52px;
+      margin-top: 4px;
+      background: var(--pop); color: var(--pop-ink);
+      font-size: 18px; font-weight: 800;
+      border-radius: 999px;
+      transition: transform .15s;
+    }
+    .play:active { transform: scale(0.97); }
+
+    @media (min-width: 760px) {
+      .pick { grid-template-columns: 1.3fr 1fr; }
+      .pick-img { aspect-ratio: auto; min-height: 300px; }
+      .pick-body { padding: 26px; justify-content: center; }
+      .play { align-self: flex-start; padding: 0 34px; }
+    }
+
+    /* ===== しぼりこみ ===== */
+    .filters {
+      display: flex; gap: 8px;
+      list-style: none;
+      /* 縦持ちで折り返すとゲームが下に押し出されるので、1段にして横へすべらせる */
+      overflow-x: auto;
+      scrollbar-width: none;
+      margin: 0 calc(var(--gutter) * -1) 16px;
+      padding: 2px var(--gutter);
+    }
+    .filters::-webkit-scrollbar { display: none; }
+    .filters button {
+      flex: none;
+      min-height: 40px;
+      padding: 0 16px;
+      font: inherit; font-size: 14px; font-weight: 700;
+      color: var(--text-2);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      cursor: pointer;
+    }
+    .filters button[aria-pressed="true"] { color: var(--bg); background: var(--text); border-color: var(--text); }
+
+    /* ===== ゲームの一覧 ===== */
+    .grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 560px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 900px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .game {
+      display: flex; flex-direction: column;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      overflow: hidden;
+      transition: background .15s, transform .15s;
+    }
+    .game:hover { background: var(--panel-2); }
+    .game:active { transform: scale(0.98); }
+    .game[hidden] { display: none; }
+
+    .thumb { position: relative; aspect-ratio: 16 / 10; background: var(--panel-2); }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .badge {
+      position: absolute; right: 8px; top: 8px;
+      background: rgba(18, 13, 36, 0.85); color: var(--text);
+      font-size: 12px; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px;
+    }
+
+    .game-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .game-head { display: flex; align-items: center; gap: 10px; }
+    .icon { width: 44px; height: 44px; border-radius: var(--r-s); flex: none; }
+    .game h3 { font-size: 17px; font-weight: 800; line-height: 1.3; }
+    .kind { font-size: 12px; color: var(--text-3); }
+    .game-desc { font-size: 13.5px; color: var(--text-2); }
+    .who { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin-top: auto; padding-top: 4px; }
+    .who li {
+      font-size: 12px; font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text-2);
+    }
+
+    .empty { text-align: center; color: var(--text-3); padding: 30px 0; }
+
+    footer { margin-top: 40px; text-align: center; font-size: 12px; color: var(--text-3); }
+    footer a { text-decoration: underline; text-underline-offset: 3px; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .play, .game { transition: none; }
+      .play:active, .game:active { transform: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <h1 class="logo"><span class="ren">れん</span><span class="ren">れん</span><span class="games">ゲームス</span></h1>
+      <p class="lead">つくったゲーム <span class="count" id="count"></span> 本、ぜんぶブラウザで遊べます</p>
+    </header>
+
+    <section id="pick" aria-label="きょうのいちおし"></section>
+
+    <ul class="filters" id="filters" aria-label="しぼりこみ"></ul>
+    <section class="grid" id="grid" aria-label="ゲームの一覧"></section>
+    <p class="empty" id="empty" hidden>この中にはまだありません</p>
+
+    <footer>
+      <p>つくった人: りゅー / うゆり ・ <a href="../" >ほかのアプリ（WORKS）</a> ・ <a href="https://x.com/suke69" target="_blank" rel="noopener noreferrer">X</a></p>
+    </footer>
+  </main>
+
+  <script>
+    // 遊べるゲームだけ。ツール類は WORKS（../）に載っている。
+    // who: 遊び方のしぼりこみ用（solo=ひとりで, vs=対戦, kids=こども）
+    const GAMES = [
+      {
+        title: '3D アリーナ',
+        kind: 'カードゲーム ・ コンパイル（ファンメイド）',
+        desc: 'ボードゲーム『コンパイル』をブラウザで遊べる3D対戦。CPU対戦・オンライン対戦に、5分で覚えられるチュートリアルつき。',
+        who: ['solo', 'vs'],
+        url: 'https://princetottino10-bit.github.io/compile/three-play.html',
+        img: '../img/arena.webp', imgLg: '../img/arena-lg.webp', icon: 'arena',
+      },
+      {
+        title: 'クイズダンジョン',
+        kind: '早押しクイズ ・ ローグライク',
+        desc: '仲間3人と体力を分け合い、4体の敵に挑む早押しクイズのローグライク。問題の順番を入れ替えて、得意なジャンルで攻める。',
+        who: ['solo', 'vs'],
+        url: 'https://princetottino10-bit.github.io/LINKS/quiz-dungeon/',
+        img: '../img/quiz-dungeon.webp', icon: 'quiz-dungeon',
+      },
+      {
+        title: '得意ジャンル早押しバトル',
+        kind: '早押しクイズ',
+        desc: '好きなジャンルを入れると、その場でAIが問題を作る早押しクイズ。1文字ずつパネルで答える。CPU相手にひとりでも遊べる。',
+        who: ['solo', 'vs'],
+        url: 'https://tokui-quiz.prince-totti-no10.workers.dev/',
+        img: '../img/quiz.webp', icon: 'quiz',
+      },
+      {
+        title: '陰陽符陣',
+        kind: 'カードゲーム ・ オリジナル',
+        badge: 'テスト中',
+        desc: '3×3の盤に妖怪の札を召喚して戦う2人用の対戦カードゲーム。招待URLでオンライン対戦、AIとの対戦もできる。',
+        who: ['solo', 'vs'],
+        url: 'https://onmyo-fujin-eee5ac.fly.dev/',
+        img: '../img/onmyo.webp', icon: 'onmyo',
+      },
+      {
+        title: '五十音マインスイーパ',
+        kind: 'パズル',
+        desc: '五十音表のマスを開けて地雷の文字を探し、隠された言葉を当てるパズル。練習とランクマッチの2つのモード。',
+        who: ['solo'],
+        url: 'https://princetottino10-bit.github.io/link/gojuon-mines/',
+        img: '../img/mines.webp', icon: 'mines',
+      },
+      {
+        title: 'スパカ倶楽部',
+        kind: 'ノベルゲーム',
+        badge: '体験版',
+        desc: '学園バトルもののノベルゲーム。第1話と、15話の見せ場「K2の決着」を読める。',
+        who: ['solo'],
+        url: 'https://claude.ai/artifact/Rb38FrvDLMo3tV2LkUMd1z',
+        img: '../img/novel.webp', icon: 'novel',
+      },
+      {
+        title: 'こっき あそび',
+        kind: 'まなび ・ 世界地図',
+        desc: '国旗を指でつまんで、その国がある州まで運ぶ世界地図あそび。首都クイズと、国旗を組み立てるパズルも。ずんだもんの声つき。',
+        who: ['kids'],
+        url: 'https://claude.ai/artifact/VHYZjoPHCtKemo3evFsTmv',
+        img: '../img/kokki.webp', icon: 'kokki',
+      },
+      {
+        title: 'かん字マスターになろう！',
+        kind: 'まなび ・ 漢字',
+        desc: 'いん石で漢字を忘れたねこたちに、指で書いて漢字を教える漢字ドリル。星を集めたり、ねこをきせかえたりできる。',
+        who: ['kids'],
+        url: 'https://claude.ai/artifact/Lv8ifziHfbkZbhoe4sYqKX',
+        img: '../img/kanji.webp', icon: 'kanji',
+      },
+    ];
+
+    const WHO = { solo: 'ひとりで', vs: '対戦', kids: 'こども向け' };
+    const FILTERS = [['all', 'ぜんぶ'], ['solo', 'ひとりで'], ['vs', '対戦'], ['kids', 'こども向け']];
+
+    const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const ext = 'target="_blank" rel="noopener noreferrer"';
+
+    // きょうのいちおし: 日付で毎日1本ずつ替わる（同じ日はだれが開いても同じ）
+    const d = new Date();
+    const day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+    const pick = GAMES[day % GAMES.length];
+
+    document.getElementById('count').textContent = GAMES.length;
+
+    document.getElementById('pick').innerHTML = `
+      <article class="pick">
+        <a class="pick-img" href="${esc(pick.url)}" ${ext} tabindex="-1">
+          <img src="${esc(pick.imgLg || pick.img)}" alt="${esc(pick.title)} の画面" decoding="async">
+          <span class="pick-label">きょうのいちおし</span>
+        </a>
+        <div class="pick-body">
+          <div class="game-head">
+            <img class="icon" src="../icons/${esc(pick.icon)}.webp" alt="" width="44" height="44">
+            <div>
+              <h2>${esc(pick.title)}</h2>
+              <p class="kind">${esc(pick.kind)}</p>
+            </div>
+          </div>
+          <p>${esc(pick.desc)}</p>
+          <a class="play" href="${esc(pick.url)}" ${ext}>あそぶ <span aria-hidden="true">▶</span></a>
+        </div>
+      </article>`;
+
+    const grid = document.getElementById('grid');
+    grid.innerHTML = GAMES.map((g) => `
+      <a class="game" href="${esc(g.url)}" ${ext} data-who="${esc(g.who.join(' '))}">
+        <div class="thumb">
+          <img src="${esc(g.img)}" alt="${esc(g.title)} の画面" width="800" height="500" loading="lazy" decoding="async">
+          ${g.badge ? `<span class="badge">${esc(g.badge)}</span>` : ''}
+        </div>
+        <div class="game-body">
+          <div class="game-head">
+            <img class="icon" src="../icons/${esc(g.icon)}.webp" alt="" width="44" height="44" loading="lazy">
+            <div>
+              <h3>${esc(g.title)}</h3>
+              <p class="kind">${esc(g.kind)}</p>
+            </div>
+          </div>
+          <p class="game-desc">${esc(g.desc)}</p>
+          <ul class="who">${g.who.map((w) => `<li>${WHO[w]}</li>`).join('')}</ul>
+        </div>
+      </a>`).join('');
+
+    const filters = document.getElementById('filters');
+    filters.innerHTML = FILTERS.map(([k, label], i) =>
+      `<li><button type="button" data-k="${k}" aria-pressed="${i === 0}">${label}</button></li>`).join('');
+    filters.addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      const k = btn.dataset.k;
+      filters.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b === btn));
+      let shown = 0;
+      grid.querySelectorAll('.game').forEach((el) => {
+        const on = k === 'all' || el.dataset.who.split(' ').includes(k);
+        el.hidden = !on;
+        if (on) shown++;
+      });
+      document.getElementById('empty').hidden = shown > 0;
+    });
+  </script>
+</body>
+</html>
